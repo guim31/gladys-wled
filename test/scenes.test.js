@@ -1,93 +1,71 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-import { DEVICE_BLUEPRINTS } from '../src/devices/index.js';
-import { MOTION_DETECTED_TRIGGER, motionSensor } from '../src/devices/motionSensor.js';
-import { SCENE_ACTIONS } from '../src/scenes.js';
-import { normalizeConfig } from '../src/config.js';
-import { createFakeGladys } from './helpers/fakeGladys.js';
+import { FIXTURES, createController, settle } from './helpers/fakeWled.js';
+import { createWorld, controllerId, segmentId } from './helpers/world.js';
 
-const manifest = JSON.parse(
-  await readFile(new URL('../gladys-assistant-integration.json', import.meta.url), 'utf8'),
-);
-const config = normalizeConfig();
+test('apply_preset takes a name (any case) or a number, and says which preset ran', async (t) => {
+  const controller = createController(FIXTURES.rgbwNoWebsocket);
+  const world = await createWorld({ controllers: [controller] });
+  t.after(() => world.app.stop());
+  const id = controllerId(world.gladys, controller);
+  const run = (fields) => world.gladys.fake.call('sceneAction:apply_preset', fields);
 
-const declarationOf = (list, key) => manifest[list].find((entry) => entry.key === key);
-const keysOf = (list) => (list ?? []).map((entry) => entry.key);
-const deviceIdOf = (gladys, key) =>
-  DEVICE_BLUEPRINTS.find((bp) => bp.key === key).deviceExternalId(gladys);
-
-// Let the async interval callback run to completion.
-const flush = () => new Promise((resolve) => setImmediate(resolve));
-
-test('the motion sensor fires one motion_detected event per detection, none on the clear', async (t) => {
-  t.mock.timers.enable({ apis: ['setInterval', 'setTimeout'] });
-  const gladys = createFakeGladys();
-  const stopPush = motionSensor.startPush(gladys, config);
-  try {
-    t.mock.timers.tick(60_000);
-    await flush();
-    assert.equal(gladys.sceneEvents.length, 1, 'one detection, one event');
-    assert.equal(gladys.sceneEvents[0].key, MOTION_DETECTED_TRIGGER);
-    assert.equal(gladys.published.at(-1).state, 1, 'the state is still published');
-
-    t.mock.timers.tick(10_000);
-    await flush();
-    assert.equal(gladys.published.at(-1).state, 0, 'the detection is cleared');
-    assert.equal(gladys.sceneEvents.length, 1, 'the clear fires no event');
-  } finally {
-    stopPush();
-  }
-});
-
-test('motion_detected data only carries keys the trigger declares', async (t) => {
-  t.mock.timers.enable({ apis: ['setInterval', 'setTimeout'] });
-  const gladys = createFakeGladys();
-  const stopPush = motionSensor.startPush(gladys, config);
-  try {
-    t.mock.timers.tick(60_000);
-    await flush();
-  } finally {
-    stopPush();
-  }
-  const [{ data }] = gladys.sceneEvents;
-  const trigger = declarationOf('scene_triggers', MOTION_DETECTED_TRIGGER);
-  // The core keeps the `fields` keys (filters) and the `variables` keys
-  // (exposed to the scene): any other key would be silently dropped.
-  const declared = [...keysOf(trigger.fields), ...keysOf(trigger.variables)];
-  for (const [key, value] of Object.entries(data)) {
-    assert.ok(declared.includes(key), `data.${key} is not declared, the core would drop it`);
-    assert.ok(value === null || typeof value !== 'object', `data.${key} must be a primitive`);
-  }
-  // A `"source": "devices"` filter stores a device external_id.
-  assert.equal(data.device, deviceIdOf(gladys, 'motion-sensor'));
-  const targets = trigger.fields.find((field) => field.key === 'target').options;
-  assert.ok(
-    targets.some((option) => option.value === data.target),
-    `data.target "${data.target}" must be one of the filter options`,
+  assert.deepEqual(await run({ device: id, preset: '  playlist 1 ' }), {
+    preset_id: 3,
+    preset_name: 'Playlist 1',
+  });
+  assert.deepEqual(controller.posts.at(-1), { ps: 3, v: true });
+  assert.deepEqual(await run({ device: id, preset: 2 }), { preset_id: 2, preset_name: 'Preset 2' });
+  await assert.rejects(
+    run({ device: id, preset: 'Disco' }),
+    /No preset "Disco" on WLED RGBW Light/,
+  );
+  await assert.rejects(
+    run({ device: 'ext:test-integration:controller:ffffffffffff', preset: 1 }),
+    /Unknown WLED device/,
   );
 });
 
-test('identify_device signals the chosen device and returns the declared outputs', async () => {
-  const gladys = createFakeGladys();
-  const outputs = await SCENE_ACTIONS.identify_device(gladys, {
-    fields: { device: deviceIdOf(gladys, 'light') },
-    config,
+test('start_effect lights the strip with the effect, palette, speed and intensity', async (t) => {
+  const controller = createController(FIXTURES.rgbwCct);
+  const world = await createWorld({ controllers: [controller] });
+  t.after(() => world.app.stop());
+  const id = controllerId(world.gladys, controller);
+  const run = (fields) => world.gladys.fake.call('sceneAction:start_effect', fields);
+
+  assert.deepEqual(
+    await run({ device: id, effect: 'rainbow', palette: 'Party', speed: 100, intensity: 0 }),
+    { effect_id: 9, effect_name: 'Rainbow' },
+  );
+  assert.deepEqual(controller.posts.at(-1), {
+    on: true,
+    seg: [{ id: 0, fx: 9, pal: 6, sx: 255, ix: 0 }],
+    v: true,
   });
-  assert.deepEqual(outputs, { signalled: true });
-  const declared = keysOf(declarationOf('scene_actions', 'identify_device').outputs);
-  for (const key of Object.keys(outputs)) {
-    assert.ok(declared.includes(key), `output "${key}" is not declared, the core would drop it`);
-  }
+  // Only the effect: palette and levels untouched.
+  await run({ device: id, effect: '2' });
+  assert.deepEqual(controller.posts.at(-1), { on: true, seg: [{ id: 0, fx: 2 }], v: true });
+
+  await assert.rejects(run({ device: id, effect: 'Moonwalk' }), /No effect "Moonwalk"/);
+  await assert.rejects(
+    run({ device: id, effect: 'Rainbow', palette: 'Plaid' }),
+    /No palette "Plaid"/,
+  );
 });
 
-test('identify_device reports a device that cannot signal itself through its output', async () => {
-  // Not a failure: a scene action is never a condition, the scene author
-  // gates the following actions on the output instead.
-  const gladys = createFakeGladys();
-  const outputs = await SCENE_ACTIONS.identify_device(gladys, {
-    fields: { device: deviceIdOf(gladys, 'weather-station') },
-    config,
+test('start_effect on a segment device turns that segment on', async (t) => {
+  const controller = createController(FIXTURES.rgbTwoSegments);
+  const world = await createWorld({
+    controllers: [controller],
+    config: { segment_devices: 'all' },
   });
-  assert.deepEqual(outputs, { signalled: false });
+  t.after(() => world.app.stop());
+  const ceiling = segmentId(world.gladys, controller, 0);
+  await world.gladys.fake.call('sceneAction:start_effect', { device: ceiling, effect: 'Blink' });
+  await settle(world.hub);
+  assert.deepEqual(controller.posts.at(-1), {
+    on: true,
+    seg: [{ id: 0, fx: 1, on: true }],
+    v: true,
+  });
 });

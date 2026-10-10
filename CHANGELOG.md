@@ -12,28 +12,26 @@ the notes of the version's GitHub Release.
 
 ### Added
 
-- A working example of scene triggers, scene actions and dashboard widgets
-  (Gladys 5.1.0 or later).
-- `CHANGELOG.md`, rolled by the Release workflow.
-- A GitHub Release for every version, with its changelog section as notes: the
-  Gladys Supervision page links each version to the repository's releases.
-- CI runs the tests on Node 22 and 24, and builds the Docker image.
-- Dependabot keeps the npm dependencies and the GitHub Actions up to date.
-- `SECURITY.md` (how to report a vulnerability) and `CLAUDE.md` (project rules
-  for contributors and coding assistants).
-- Manifest tests: `version` matches `package.json`, `docker_image` is tagged
-  with it, descriptions hold 10 to 100 characters, placeholders are
-  multi-language objects.
-- The latitude and longitude fields show an example value as placeholder.
+- WLED controllers over the local network, found automatically through the
+  Gladys core (mDNS `_wled._tcp`), or by IP address entered in the
+  configuration. A controller is recognized by its MAC address and keeps its
+  device when its IP address changes.
+- One device per controller: on/off, brightness, color, color temperature
+  (strips with CCT whites), white channel (RGBW strips), effect, palette and
+  preset lists read on the controller, effect speed and intensity, nightlight,
+  UDP sync. It drives the segments selected in WLED, like the WLED interface.
+- Option: one more device per segment, for controllers with several segments.
+- Real-time states over each controller's WebSocket, with reconnection and a
+  30-second poll while the WebSocket is down or missing. Only the changes are
+  published, and every state is sent again when a device is added in Gladys.
+- New presets saved in WLED, and new effects or palettes after a firmware
+  update, reach the lists of the devices already created.
+- Scene actions "Apply a WLED preset" and "Start a WLED effect", and the scene
+  trigger "WLED preset activated" (a preset started outside Gladys).
+- "WLED" dashboard widget: favorite presets as buttons, the current effect,
+  palette and preset, and an effect picker.
+- Local / unreachable badge on every device.
+- "Search for controllers" action in the configuration screen.
+- User documentation in English and French.
 
-### Changed
-
-- Node.js 22 or later is required (Node 20 is end-of-life).
-
-### Fixed
-
-- The release commit no longer fails `npm run format:check`: the Release
-  workflow updates the manifest `version` and `docker_image` in place instead
-  of re-printing the whole file with `jq`.
-
-[Unreleased]: https://github.com/GladysAssistant/integration-template-js/commits/main
+[Unreleased]: https://github.com/guim31/gladys-wled/commits/main

@@ -1,33 +1,55 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeConfig, DEFAULT_CONFIG } from '../src/config.js';
+import { DEFAULT_CONFIG, normalizeConfig, parseHosts } from '../src/config.js';
 
-test('normalizeConfig returns the defaults when called with no argument', () => {
-  assert.deepEqual(normalizeConfig(), DEFAULT_CONFIG);
+test('normalizeConfig returns usable defaults when called with nothing', () => {
+  assert.deepEqual(normalizeConfig(), {
+    hosts: [],
+    invalidHosts: [],
+    segmentDevices: 'none',
+    language: 'en',
+  });
+  assert.deepEqual(normalizeConfig(null), normalizeConfig());
 });
 
-test('normalizeConfig keeps user values over the defaults', () => {
-  const config = normalizeConfig({ latitude: 45.5, longitude: -73.6, unit: 'fahrenheit' });
-  assert.equal(config.latitude, 45.5);
-  assert.equal(config.longitude, -73.6);
-  assert.equal(config.unit, 'fahrenheit');
+test('normalizeConfig keeps the known values and drops the unknown ones', () => {
+  const config = normalizeConfig({
+    hosts: '192.168.1.50',
+    segment_devices: 'all',
+    language: 'fr',
+  });
+  assert.deepEqual(config.hosts, ['192.168.1.50']);
+  assert.equal(config.segmentDevices, 'all');
+  assert.equal(config.language, 'fr');
+
+  const odd = normalizeConfig({ segment_devices: 'some', language: 'de', hosts: 42 });
+  assert.equal(odd.segmentDevices, DEFAULT_CONFIG.segment_devices);
+  assert.equal(odd.language, DEFAULT_CONFIG.language);
+  assert.deepEqual(odd.hosts, []);
 });
 
-test('normalizeConfig coerces numeric strings coming from a form', () => {
-  const config = normalizeConfig({ latitude: '48.8', longitude: '2.3', poll_frequency: '600' });
-  assert.equal(config.latitude, 48.8);
-  assert.equal(config.longitude, 2.3);
-  assert.equal(config.poll_frequency, 600);
-  assert.equal(typeof config.poll_frequency, 'number');
+test('parseHosts accepts the separators and the URLs users paste', () => {
+  const { hosts, invalid } = parseHosts(
+    'http://192.168.1.50/, 192.168.1.51;192.168.1.52:8080\nwled-kitchen.lan  192.168.1.50',
+  );
+  assert.deepEqual(hosts, [
+    '192.168.1.50',
+    '192.168.1.51',
+    '192.168.1.52:8080',
+    'wled-kitchen.lan',
+  ]);
+  assert.deepEqual(invalid, []);
 });
 
-test('normalizeConfig falls back to the default for a missing numeric field', () => {
-  const config = normalizeConfig({ unit: 'celsius' });
-  assert.equal(config.poll_frequency, DEFAULT_CONFIG.poll_frequency);
+test('parseHosts reports what it cannot use', () => {
+  const { hosts, invalid } = parseHosts(
+    '192.168.1.300, 192.168.1, 10.0.0.1:99999, wled_kitchen, ok.lan',
+  );
+  assert.deepEqual(hosts, ['ok.lan']);
+  assert.deepEqual(invalid, ['192.168.1.300', '192.168.1', '10.0.0.1:99999', 'wled_kitchen']);
 });
 
-test('GLADYS_PREFER_LOCAL defaults to true and only an explicit false disables it', () => {
-  assert.equal(normalizeConfig().GLADYS_PREFER_LOCAL, true);
-  assert.equal(normalizeConfig({ GLADYS_PREFER_LOCAL: true }).GLADYS_PREFER_LOCAL, true);
-  assert.equal(normalizeConfig({ GLADYS_PREFER_LOCAL: false }).GLADYS_PREFER_LOCAL, false);
+test('parseHosts caps the list at 64 addresses', () => {
+  const many = Array.from({ length: 80 }, (_, i) => `10.0.${Math.floor(i / 250)}.${i % 250}`);
+  assert.equal(parseHosts(many.join(',')).hosts.length, 64);
 });
