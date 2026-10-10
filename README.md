@@ -31,8 +31,9 @@ local network, through WLED's JSON API and its WebSocket. No cloud, no account.
 - **Scene trigger**: _WLED preset activated_, when a preset or playlist starts
   outside Gladys (WLED app, button, schedule, remote).
 - **Dashboard widget** "WLED": the presets marked as favorites in WLED (a
-  quick-load label) as one-tap buttons, the current effect, palette and preset,
-  and an effect picker.
+  quick-load label) and the effects chosen in the widget settings as one-tap
+  buttons, with the current effect, palette and preset. No button opens a
+  form: those need a Gladys newer than 5.1.4.
 - A **transport badge** per device: local, or unreachable when the controller
   does not answer.
 

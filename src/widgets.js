@@ -4,12 +4,17 @@
 // The Gladys device box already has the switch, the brightness, the colour and
 // the effect, palette and preset lists. What the widget adds: the presets the
 // user marked as favourites in WLED (a quick-load label) as one-tap buttons,
-// what the strip is showing at a glance, and an effect picker behind a tap.
+// what the strip is showing at a glance, and one-tap buttons for the effects
+// chosen in the widget settings.
+//
+// No button opens a form: forms on widget buttons (GladysAssistant/Gladys#3168)
+// are in no published Gladys yet (5.1.4 drops the fields and relays the tap
+// without values). The former effect picker stays behind WIDGET_FORMS.
 //
 // Budget (8 components, 2 texts, 1 status, 4 buttons): a caption, the live
 // brightness tile, one status list and up to four buttons. The active preset
-// is marked by its icon (`check-circle`), never by the button style: `primary`
-// is invisible in dark mode.
+// or effect is marked by its icon (`check-circle`), never by the button style:
+// `primary` is invisible in dark mode.
 // -----------------------------------------------------------------------------
 
 import { WIDGET_COLORS } from '@gladysassistant/integration-sdk';
@@ -21,13 +26,41 @@ import {
   segmentName,
   segmentSpecs,
 } from './devices.js';
-import { WIDGET_KEY } from './hub.js';
+import { WIDGET_KEY, findByReference } from './hub.js';
 import { activePresetId, findSegment, mainSegmentId } from './wled/model.js';
 
 const ACTIVE_ICON = 'check-circle';
+const MAX_BUTTONS = 4;
 const MAX_PRESET_BUTTONS = 3;
 const PRESET_ACTION_PREFIX = 'preset_';
+const EFFECT_BUTTON_PREFIX = 'effect_';
+// Published key of the former effect picker (a button opening a form).
 const EFFECT_ACTION = 'effect';
+
+// Forms on widget buttons need a Gladys newer than 5.1.4: off until one ships.
+export const WIDGET_FORMS = false;
+
+// Effects offered in the widget settings (a static list: the settings form
+// cannot read the controller). Long-standing WLED effects, matched by name on
+// each controller; one missing on an old build is simply not shown. The
+// option values are stored in the dashboards: permanent.
+export const EFFECT_CHOICES = [
+  'Solid',
+  'Rainbow',
+  'Colorloop',
+  'Breathe',
+  'Candle',
+  'Fire 2012',
+  'Twinkle',
+  'Aurora',
+  'Fireworks',
+  'Meteor',
+  'Pacifica',
+  'Lake',
+];
+// What a widget shows before its settings are touched: back to a plain
+// colour, and the classic animation.
+export const DEFAULT_WIDGET_EFFECTS = ['Solid', 'Rainbow'];
 
 const TEXT = {
   pick: {
@@ -68,6 +101,36 @@ export function favoritePresets(controller) {
   const presets = controller.presets ?? [];
   const favorites = presets.filter((preset) => preset.quickLabel);
   return (favorites.length > 0 ? favorites : presets).slice(0, MAX_PRESET_BUTTONS);
+}
+
+/**
+ * The effects chosen in the widget settings that the controller has, in
+ * order. Settings never saved get the defaults; an empty choice means none.
+ */
+export function favoriteEffects(controller, settings) {
+  const raw = settings?.effects;
+  const names = Array.isArray(raw)
+    ? raw
+    : typeof raw === 'string'
+      ? raw.split(',')
+      : DEFAULT_WIDGET_EFFECTS;
+  const effects = [];
+  for (const name of names) {
+    const effect = findByReference(controller.effects ?? [], name);
+    if (effect && !effects.includes(effect)) {
+      effects.push(effect);
+    }
+  }
+  return effects;
+}
+
+/**
+ * Share the four buttons: presets first, effects after. Effects keep at least
+ * two places when there are presets, and take all four when there are none.
+ */
+export function splitButtons(presetCount, effectCount) {
+  const effects = Math.min(effectCount, presetCount >= 2 ? 2 : MAX_BUTTONS - presetCount);
+  return { presets: Math.min(presetCount, MAX_BUTTONS - effects), effects };
 }
 
 const nameOf = (list, id) => list.find((entry) => entry.id === id)?.name;
@@ -162,46 +225,61 @@ async function get(hub, { settings, language = 'en' }) {
     { type: 'status', items },
   ];
 
+  const presets = onController ? favoritePresets(controller) : [];
+  const effects = favoriteEffects(controller, settings);
+  const share = splitButtons(presets.length, effects.length);
   const buttons = [];
-  if (onController) {
-    favoritePresets(controller).forEach((preset, index) => {
-      buttons.push({
-        type: 'button',
-        label: fitButton(preset.name),
-        icon: preset.id === active ? ACTIVE_ICON : 'bookmark',
-        style: 'secondary',
-        // Numbered keys: the core drops a button whose action key is taken.
-        action: { key: `${PRESET_ACTION_PREFIX}${index + 1}`, params: { preset: preset.id } },
-      });
-    });
-  }
-  if (controller.effects.length > 0) {
-    const current = segment && Number.isInteger(segment.fx) ? String(segment.fx) : undefined;
-    const options = controller.effects.map(({ id, name }) => ({
-      value: String(id),
-      label: { en: name },
-    }));
+  presets.slice(0, share.presets).forEach((preset, index) => {
     buttons.push({
       type: 'button',
-      label: t(TEXT.effect, language),
-      icon: 'play',
+      label: fitButton(preset.name),
+      icon: preset.id === active ? ACTIVE_ICON : 'bookmark',
       style: 'secondary',
-      action: {
-        key: EFFECT_ACTION,
-        fields: [
-          {
-            key: 'effect',
-            type: 'select',
-            required: true,
-            label: TEXT.effect,
-            options,
-            ...(options.some((option) => option.value === current) ? { default: current } : {}),
-          },
-        ],
-      },
+      // Numbered keys: the core drops a button whose action key is taken.
+      action: { key: `${PRESET_ACTION_PREFIX}${index + 1}`, params: { preset: preset.id } },
     });
+  });
+  effects.slice(0, share.effects).forEach((effect, index) => {
+    buttons.push({
+      type: 'button',
+      label: fitButton(effect.name),
+      icon: lit && segment?.fx === effect.id ? ACTIVE_ICON : 'play',
+      style: 'secondary',
+      action: { key: `${EFFECT_BUTTON_PREFIX}${index + 1}`, params: { effect: effect.id } },
+    });
+  });
+  if (WIDGET_FORMS && controller.effects.length > 0) {
+    buttons.push(effectPicker(controller, segment, language));
   }
-  return { ttl_seconds: 60, components: [...components, ...buttons.slice(0, 4)] };
+  return { ttl_seconds: 60, components: [...components, ...buttons.slice(0, MAX_BUTTONS)] };
+}
+
+/** The former effect picker: a button opening a form (Gladys#3168). */
+export function effectPicker(controller, segment, language) {
+  const current = segment && Number.isInteger(segment.fx) ? String(segment.fx) : undefined;
+  const options = controller.effects.map(({ id, name }) => ({
+    value: String(id),
+    label: { en: name },
+  }));
+  return {
+    type: 'button',
+    label: t(TEXT.effect, language),
+    icon: 'play',
+    style: 'secondary',
+    action: {
+      key: EFFECT_ACTION,
+      fields: [
+        {
+          key: 'effect',
+          type: 'select',
+          required: true,
+          label: TEXT.effect,
+          options,
+          ...(options.some((option) => option.value === current) ? { default: current } : {}),
+        },
+      ],
+    },
+  };
 }
 
 async function action(hub, { actionKey, params = {}, settings, values }) {
@@ -212,6 +290,10 @@ async function action(hub, { actionKey, params = {}, settings, values }) {
   if (actionKey.startsWith(PRESET_ACTION_PREFIX)) {
     const preset = await hub.applyPreset(device, params.preset);
     return { message: prefixed(TEXT.presetApplied, preset.name) };
+  }
+  if (actionKey.startsWith(EFFECT_BUTTON_PREFIX)) {
+    const effect = await hub.startEffect(device, { effect: params.effect });
+    return { message: prefixed(TEXT.effectStarted, effect.name) };
   }
   if (actionKey === EFFECT_ACTION) {
     if (!values || values.effect === undefined) {

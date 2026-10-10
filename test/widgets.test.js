@@ -8,7 +8,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateWidgetContent } from '@gladysassistant/integration-sdk';
-import { favoritePresets, fitButton, fitStatus } from '../src/widgets.js';
+import {
+  DEFAULT_WIDGET_EFFECTS,
+  WIDGET_FORMS,
+  effectPicker,
+  favoriteEffects,
+  favoritePresets,
+  fitButton,
+  fitStatus,
+  splitButtons,
+} from '../src/widgets.js';
 import { FIXTURES, createController, settle } from './helpers/fakeWled.js';
 import { createWorld, controllerId, segmentId } from './helpers/world.js';
 
@@ -64,7 +73,15 @@ test('without a device, or with an unknown one, the widget says what to do', asy
   assert.match(french.components[0].text, /Choisissez un appareil WLED/);
 });
 
-test('controller widget: caption, live brightness, status, favourite presets, effect picker', async (t) => {
+// Gladys 5.1.4 (the latest release) drops the `fields` of a button and relays
+// the tap without values: no button may depend on a form.
+function assertNoForm(content) {
+  for (const component of content.components) {
+    assert.equal(component.action?.fields, undefined, `${component.label}: no form`);
+  }
+}
+
+test('controller widget: caption, live brightness, status, favourite presets, effect buttons', async (t) => {
   const controller = createController(FIXTURES.rgbwNoWebsocket);
   const world = await createWorld({ controllers: [controller] });
   t.after(() => world.app.stop());
@@ -72,7 +89,7 @@ test('controller widget: caption, live brightness, status, favourite presets, ef
   const content = await get(world, { device: id });
   assert.deepEqual(validateWidgetContent(content), []);
   assertLinkedFeatures(world, content);
-  assertActionFields(content);
+  assertNoForm(content);
 
   const [caption, tile, status, ...buttons] = content.components;
   assert.equal(caption.text, 'WLED RGBW Light · WLED 0.99.0b1 · 30 LEDs');
@@ -91,11 +108,15 @@ test('controller widget: caption, live brightness, status, favourite presets, ef
     [
       ['Preset 1', 'preset_1', { preset: 1 }],
       ['Preset 2', 'preset_2', { preset: 2 }],
-      ['Playlist 1', 'preset_3', { preset: 3 }],
-      ['Effect', 'effect', undefined],
+      // The default effect buttons: Solid (the current one) and Rainbow.
+      ['Solid', 'effect_1', { effect: 0 }],
+      ['Rainbow', 'effect_2', { effect: 9 }],
     ],
   );
-  assert.equal(buttons[3].action.fields[0].default, '0');
+  assert.deepEqual(
+    buttons.map((b) => b.icon),
+    ['bookmark', 'bookmark', 'check-circle', 'play'],
+  );
   assert.ok(
     buttons.every((b) => b.style === 'secondary'),
     'never primary (dark mode)',
@@ -117,7 +138,7 @@ test('the active preset is marked by its icon, and the widget follows the langua
   const buttons = content.components.filter((c) => c.type === 'button');
   assert.deepEqual(
     buttons.map((b) => b.icon),
-    ['bookmark', 'check-circle', 'bookmark', 'play'],
+    ['bookmark', 'check-circle', 'check-circle', 'play'],
   );
   const status = content.components.find((c) => c.type === 'status');
   assert.deepEqual(status.items.at(-1).value, 'Preset 2');
@@ -192,14 +213,89 @@ test('segment widget: its own effect, no presets, unreachable shown', async (t) 
     status.items.map((item) => item.label),
     ['Light', 'Effect', 'Palette'],
   );
+  assertNoForm(content);
   const buttons = content.components.filter((c) => c.type === 'button');
   assert.deepEqual(
-    buttons.map((b) => b.action.key),
-    ['effect'],
+    buttons.map((b) => [b.label, b.action.key]),
+    [
+      ['Solid', 'effect_1'],
+      ['Rainbow', 'effect_2'],
+    ],
   );
 });
 
-test('widget actions apply a preset or start the effect picked in the form', async (t) => {
+test('the effect buttons follow the widget settings, on what the controller has', async (t) => {
+  const controller = createController(FIXTURES.rgb0154, { presets: { 0: {} } });
+  const world = await createWorld({ controllers: [controller] });
+  t.after(() => world.app.stop());
+  const id = controllerId(world.gladys, controller);
+  const content = await get(world, {
+    device: id,
+    effects: ['Candle', 'Fire 2012', 'Moonwalk', 'Candle', 'Aurora', 'Lake', 'Meteor'],
+  });
+  assert.deepEqual(validateWidgetContent(content), []);
+  assertNoForm(content);
+  // No presets: the four buttons go to the effects; unknown and repeated skipped.
+  assert.deepEqual(
+    content.components.filter((c) => c.type === 'button').map((b) => [b.label, b.action.params]),
+    [
+      ['Candle', { effect: 88 }],
+      ['Fire 2012', { effect: 66 }],
+      ['Aurora', { effect: 38 }],
+      ['Lake', { effect: 75 }],
+    ],
+  );
+  // An empty choice means no effect button.
+  const none = await get(world, { device: id, effects: [] });
+  assert.equal(none.components.filter((c) => c.type === 'button').length, 0);
+});
+
+test('favourite effects: defaults when never set, names matched on the controller', () => {
+  const effects = [
+    { id: 0, name: 'Solid' },
+    { id: 1, name: 'Blink' },
+    { id: 3, name: 'Breathe' },
+  ];
+  // An old build without Rainbow: only Solid of the defaults.
+  assert.deepEqual(
+    favoriteEffects({ effects }, {}).map((e) => e.name),
+    ['Solid'],
+  );
+  assert.deepEqual(DEFAULT_WIDGET_EFFECTS, ['Solid', 'Rainbow']);
+  assert.deepEqual(
+    favoriteEffects({ effects }, { effects: 'breathe, solid' }).map((e) => e.id),
+    [3, 0],
+  );
+  assert.deepEqual(favoriteEffects({ effects }, { effects: [] }), []);
+  assert.deepEqual(favoriteEffects({}, {}), []);
+});
+
+test('the four buttons are shared between presets and effects', () => {
+  assert.deepEqual(splitButtons(3, 2), { presets: 2, effects: 2 });
+  assert.deepEqual(splitButtons(3, 0), { presets: 3, effects: 0 });
+  assert.deepEqual(splitButtons(1, 4), { presets: 1, effects: 3 });
+  assert.deepEqual(splitButtons(0, 6), { presets: 0, effects: 4 });
+  assert.deepEqual(splitButtons(2, 1), { presets: 2, effects: 1 });
+});
+
+test('the former effect picker stays off, and valid for the day Gladys ships forms', () => {
+  assert.equal(WIDGET_FORMS, false);
+  const picker = effectPicker(
+    {
+      effects: [
+        { id: 0, name: 'Solid' },
+        { id: 9, name: 'Rainbow' },
+      ],
+    },
+    { fx: 9 },
+    'en',
+  );
+  assertActionFields({ components: [picker] });
+  assert.equal(picker.action.key, 'effect');
+  assert.equal(picker.action.fields[0].default, '9');
+});
+
+test('widget actions apply a preset or start an effect', async (t) => {
   const controller = createController(FIXTURES.rgb0154);
   const world = await createWorld({ controllers: [controller] });
   t.after(() => world.app.stop());
@@ -217,6 +313,12 @@ test('widget actions apply a preset or start the effect picked in the form', asy
   });
   assert.deepEqual(controller.posts.at(-1), { ps: 4, v: true });
 
+  assert.deepEqual(await act('effect_2', { effect: 88 }, { settings: { device: id } }), {
+    message: { en: 'Effect started: Candle', fr: 'Effet lancé : Candle' },
+  });
+  assert.deepEqual(controller.posts.at(-1), { on: true, seg: [{ id: 0, fx: 88 }], v: true });
+
+  // The former picker's key still answers, for a core that sends the form.
   assert.deepEqual(await act('effect', {}, { settings: { device: id }, values: { effect: '9' } }), {
     message: { en: 'Effect started: Rainbow', fr: 'Effet lancé : Rainbow' },
   });
