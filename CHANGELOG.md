@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-10
+
 ### Fixed
 
 - The "Effect" button of the WLED widget did nothing on a real Gladys: buttons
@@ -43,5 +45,6 @@ the notes of the version's GitHub Release.
 - "Search for controllers" action in the configuration screen.
 - User documentation in English and French.
 
-[Unreleased]: https://github.com/guim31/gladys-wled/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/guim31/gladys-wled/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/guim31/gladys-wled/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/guim31/gladys-wled/releases/tag/v1.0.1
