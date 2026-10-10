@@ -436,3 +436,24 @@ test('WebSocket pushes in a burst are merged', async (t) => {
     [20],
   );
 });
+
+test('a probe that times out does not flag a controller whose WebSocket is live', async (t) => {
+  const controller = createController(FIXTURES.rgb0154);
+  const world = await createWorld({ controllers: [controller] });
+  t.after(() => world.app.stop());
+  const { gladys, hub } = world;
+  const id = controllerId(gladys, controller);
+  await createAll(world);
+  // The rescan's HTTP probe fails, the WebSocket stays up.
+  controller.online = false;
+  await gladys.fake.call('scan');
+  controller.online = true;
+  assert.deepEqual(gladys.fake.lastTransport(id), { external_id: id, transport: 'local' });
+
+  // Flagged unreachable some other way: the next push sets it back.
+  hub.setReachable(hub.controllers.get(controller.mac), false);
+  controller.push();
+  await settle(hub);
+  assert.equal(hub.controllers.get(controller.mac).reachable, true);
+  assert.deepEqual(gladys.fake.lastTransport(id), { external_id: id, transport: 'local' });
+});

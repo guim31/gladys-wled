@@ -49,7 +49,7 @@ export const HUB_TIMINGS = {
   // New scan (mDNS + typed addresses), to follow DHCP changes and new controllers.
   rediscoveryMs: 15 * 60_000,
   // WebSocket pushes closer than this are merged (a slider dragged in the app).
-  debounceMs: 150,
+  debounceMs: 300,
   // A preset change seen this long after a Gladys command is Gladys' own.
   ownPresetMs: 5_000,
 };
@@ -266,7 +266,8 @@ export class WledHub {
       }
     }
     for (const controller of this.controllers.values()) {
-      if (!answers.has(controller.mac)) {
+      // A live WebSocket is a better proof than one probe that timed out.
+      if (!answers.has(controller.mac) && !controller.socket?.connected) {
         this.setReachable(controller, false);
       }
     }
@@ -582,7 +583,12 @@ export class WledHub {
         createSocket: this.createSocket,
         timings: this.socketTimings,
         logger,
-        onMessage: (data) => this.receive(controller, data),
+        onMessage: (data) => {
+          if (!controller.reachable) {
+            this.track(this.reachabilityChanged(controller, true));
+          }
+          this.receive(controller, data);
+        },
         onOpen: () => {
           this.stopPolling(controller);
           this.track(this.reachabilityChanged(controller, true));

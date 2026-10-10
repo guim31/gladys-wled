@@ -71,7 +71,7 @@ Integration container ──HTTP /json/si, /json/eff, /json/pal, /presets.json�
   changes IP address (DHCP) keeps its device; a new scan (every 15 minutes, or
   from the Discovery tab) finds its new address.
 - Only the **changes** are published to Gladys (it allows 300 states a minute),
-  and pushes closer than 150 ms are merged (a slider dragged in the WLED app).
+  and pushes closer than 300 ms are merged (a slider dragged in the WLED app).
 - The effect and palette lists are read again when the firmware changes, the
   presets when one is saved (`info.fs.pmt`). New lists reach the devices
   already created without any action.
