@@ -1,41 +1,29 @@
 // -----------------------------------------------------------------------------
-// Scene actions (SDK v0.14+, Gladys 5.1+).
+// Scene action handlers (manifest `scene_actions`, Gladys 5.1+).
 //
-// A scene action is an OPERATION a scene author places in a scene, with
-// parameters and a result: "identify this device", "take a snapshot", "clean
-// these rooms". Each one is declared in the manifest `scene_actions` field
-// (key, label, `fields` in the config_schema grammar, scalar `outputs`) and
-// handled here, keyed by that same `key`; index.js registers every entry with
-// `gladys.onSceneAction(key, ...)`.
+// On, brightness and colour are already Gladys scene actions on the light
+// features. These two reach what only WLED knows: its presets and playlists,
+// and its effects with their palette and settings. Names are typed in the
+// scene (the scene editor offers no list read from the controller): a number
+// works too.
 //
-// Scene TRIGGERS are the other direction ("this happened"): they are fired by
-// the device that observes the event, see src/devices/motionSensor.js.
-//
-// The rules that matter:
-//   - `fields` arrive RESOLVED: scene variables substituted, defaults applied,
-//     validated by the core; a `"source": "devices"` field is the chosen
-//     device external_id;
-//   - resolve an object of the declared `outputs` (scalars only), readable by
-//     the following actions of the scene, or `undefined` for none. Keys not
-//     declared in the manifest are dropped by the core;
-//   - throwing fails THIS action only: the scene logs it and continues. A
-//     scene action is never a condition: return an output and let the scene
-//     author gate on it;
-//   - never fire a scene event as a consequence of a received action: a scene
-//     bound to that event would loop through the integration.
+// The preset trigger (`preset_activated`) is fired by the hub (src/hub.js),
+// never as a consequence of these actions: a scene bound to it would loop.
 // -----------------------------------------------------------------------------
 
-import { createLogger } from '@gladysassistant/integration-sdk';
-import { signalDevice } from './devices/index.js';
-
-const logger = createLogger({ name: 'scenes' });
-
 export const SCENE_ACTIONS = {
-  // The ack is awaited under the action's `timeout_seconds` (15 s in the
-  // manifest), counted from the moment the scene reaches the action.
-  async identify_device(gladys, { fields, config }) {
-    logger.info(`Scene action identify_device <- ${fields.device}`);
-    const signalled = await signalDevice(gladys, fields.device, config);
-    return { signalled };
+  async apply_preset(hub, { fields }) {
+    const preset = await hub.applyPreset(fields.device, fields.preset);
+    return { preset_id: preset.id, preset_name: preset.name };
+  },
+
+  async start_effect(hub, { fields }) {
+    const effect = await hub.startEffect(fields.device, {
+      effect: fields.effect,
+      palette: fields.palette,
+      speed: fields.speed,
+      intensity: fields.intensity,
+    });
+    return { effect_id: effect.id, effect_name: effect.name };
   },
 };

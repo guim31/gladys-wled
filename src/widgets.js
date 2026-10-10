@@ -1,169 +1,229 @@
 // -----------------------------------------------------------------------------
-// Dashboard widgets (SDK v0.14+, Gladys 5.1+).
+// Dashboard widget (manifest `widgets`, Gladys 5.1+): `wled`.
 //
-// A widget puts the integration's own data on the Gladys dashboard without a
-// dedicated core widget. The manifest `widgets` field declares its identity
-// (key, label, icon, optional per-instance `settings`); at runtime the
-// integration returns a DECLARATIVE content — `text`, `value`, `gauge`,
-// `status`, `chart`, `card-list`, `image`, `button` — that the core renders
-// with its own theme, dark mode and translations. No HTML, no CSS.
+// The Gladys device box already has the switch, the brightness, the colour and
+// the effect, palette and preset lists. What the widget adds: the presets the
+// user marked as favourites in WLED (a quick-load label) as one-tap buttons,
+// what the strip is showing at a glance, and an effect picker behind a tap.
 //
-// Each entry of WIDGETS is keyed by the widget `key` and exposes:
-//   - get(gladys, { settings, language, units, config }): the content,
-//     registered by index.js with `gladys.onWidgetGet(key, ...)`;
-//   - action(gladys, { actionKey, params, settings, config }) (optional): a
-//     tapped `button` carrying an `action`, registered with
-//     `gladys.onWidgetAction`.
-//
-// Check your contents in the tests with `validateWidgetContent` (exported by
-// the SDK, see test/widgets.test.js), or run with DEBUG=gladys-integration-sdk
-// to have the SDK log every violation of the vocabulary and the budget.
+// Budget (8 components, 2 texts, 1 status, 4 buttons): a caption, the live
+// brightness tile, one status list and up to four buttons. The active preset
+// is marked by its icon (`check-circle`), never by the button style: `primary`
+// is invisible in dark mode.
 // -----------------------------------------------------------------------------
 
+import { WIDGET_COLORS } from '@gladysassistant/integration-sdk';
 import {
-  createLogger,
-  DEVICE_FEATURE_CATEGORIES,
-  DEVICE_TRANSPORTS,
-  WIDGET_COLORS,
-} from '@gladysassistant/integration-sdk';
-import { identifyDevice } from './devices/index.js';
-import { weatherStation } from './devices/weatherStation.js';
-import { plug } from './devices/plug.js';
-import { light } from './devices/light.js';
+  FEATURE_KEYS,
+  controllerName,
+  controllerSpecs,
+  deviceIds,
+  segmentName,
+  segmentSpecs,
+} from './devices.js';
+import { WIDGET_KEY } from './hub.js';
+import { activePresetId, findSegment, mainSegmentId } from './wled/model.js';
 
-const logger = createLogger({ name: 'widgets' });
+const ACTIVE_ICON = 'check-circle';
+const MAX_PRESET_BUTTONS = 3;
+const PRESET_ACTION_PREFIX = 'preset_';
+const EFFECT_ACTION = 'effect';
 
-// Widget key, as declared in the manifest `widgets` field.
-export const DEMO_STATUS_WIDGET = 'demo_status';
-
-// Keys of the `button` actions the demo_status content declares.
-const DEMO_STATUS_ACTIONS = { IDENTIFY_LIGHT: 'identify_light' };
-
-// How the plug transport reads in the status list.
-const TRANSPORT_STATUS = {
-  [DEVICE_TRANSPORTS.LOCAL]: { value: { en: 'Local', fr: 'Locale' }, color: WIDGET_COLORS.SUCCESS },
-  [DEVICE_TRANSPORTS.CLOUD]: { value: { en: 'Cloud', fr: 'Cloud' }, color: WIDGET_COLORS.INFO },
-  [DEVICE_TRANSPORTS.UNREACHABLE]: {
-    value: { en: 'Unreachable', fr: 'Injoignable' },
-    color: WIDGET_COLORS.DANGER,
+const TEXT = {
+  pick: {
+    en: 'Choose a WLED device in the settings of this widget.',
+    fr: 'Choisissez un appareil WLED dans les réglages de ce widget.',
+  },
+  unknown: {
+    en: 'This WLED device is not known yet: run a search in the integration.',
+    fr: 'Cet appareil WLED est inconnu : lancez une recherche dans l’intégration.',
+  },
+  brightness: { en: 'Brightness', fr: 'Luminosité' },
+  effect: { en: 'Effect', fr: 'Effet' },
+  palette: { en: 'Palette', fr: 'Palette' },
+  preset: { en: 'Preset', fr: 'Préréglage' },
+  power: { en: 'Light', fr: 'Éclairage' },
+  on: { en: 'On', fr: 'Allumé' },
+  off: { en: 'Off', fr: 'Éteint' },
+  none: { en: 'None', fr: 'Aucun' },
+  unreachable: { en: 'unreachable', fr: 'injoignable' },
+  live: { en: 'live data', fr: 'flux en direct' },
+  leds: { en: 'LEDs', fr: 'LED' },
+  presetApplied: { en: 'Preset applied: ', fr: 'Préréglage appliqué : ' },
+  effectStarted: { en: 'Effect started: ', fr: 'Effet lancé : ' },
+  updateGladys: {
+    en: 'Update Gladys to pick an effect from the widget.',
+    fr: 'Mettez Gladys à jour pour choisir un effet depuis le widget.',
   },
 };
 
-// A live tile references a feature by its external_id: read it from the
-// discovery payload itself, so the widget and the device never disagree.
-function featureExternalId(gladys, config, blueprint, category) {
-  const device = blueprint.buildDevice(gladys, config);
-  return device.features.find((feature) => feature.category === category).external_id;
+const t = (text, language) => text[language] ?? text.en;
+const prefixed = (text, suffix) => ({ en: `${text.en}${suffix}`, fr: `${text.fr}${suffix}` });
+
+/**
+ * The presets offered as buttons: those with a quick-load label in WLED
+ * (the user's favourites), else the first ones.
+ */
+export function favoritePresets(controller) {
+  const presets = controller.presets ?? [];
+  const favorites = presets.filter((preset) => preset.quickLabel);
+  return (favorites.length > 0 ? favorites : presets).slice(0, MAX_PRESET_BUTTONS);
 }
 
-function plugConnectionStatus(gladys, config) {
-  const { transport, degraded } = plug.transport(gladys, config);
-  const { value, color } = TRANSPORT_STATUS[transport];
-  if (degraded) {
-    return {
-      value: { en: `${value.en} (degraded mode)`, fr: `${value.fr} (mode dégradé)` },
-      color: WIDGET_COLORS.WARNING,
-    };
+const nameOf = (list, id) => list.find((entry) => entry.id === id)?.name;
+
+// The core cuts a status value past 40 characters and a button label past 24:
+// cut long names cleanly here instead, with an ellipsis.
+const fit = (text, max) => (text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text);
+export const fitStatus = (text) => fit(text, 40);
+export const fitButton = (text) => fit(text, 24);
+
+function message(text, language) {
+  return {
+    ttl_seconds: 300,
+    components: [{ type: 'text', variant: 'body', text: t(text, language) }],
+  };
+}
+
+async function get(hub, { settings, language = 'en' }) {
+  const resolved = settings?.device ? hub.resolveDevice(settings.device) : null;
+  if (!resolved?.controller.state) {
+    return message(settings?.device ? TEXT.unknown : TEXT.pick, language);
   }
-  return { value, color };
+  const { controller, segmentId } = resolved;
+  const { state, info } = controller;
+  const onController = segmentId === null;
+  const segment = findSegment(state, onController ? mainSegmentId(state) : segmentId)?.segment;
+  const specs = onController
+    ? controllerSpecs(controller, language)
+    : segmentSpecs(controller, segmentId, language);
+  const has = (key) => specs.some((spec) => spec.key === key);
+  const ids = deviceIds(hub.gladys, controller, segmentId);
+
+  const caption = [
+    onController ? controllerName(controller) : segmentName(controller, segmentId, language),
+    `WLED ${info.version}`,
+  ];
+  if (info.ledCount > 0) {
+    caption.push(`${info.ledCount} ${t(TEXT.leds, language)}`);
+  }
+  if (!controller.reachable) {
+    caption.push(t(TEXT.unreachable, language));
+  } else if (info.live) {
+    caption.push(t(TEXT.live, language));
+  }
+
+  const lit = state.on === true && (onController || segment?.on !== false);
+  const items = [
+    {
+      label: t(TEXT.power, language),
+      icon: 'power',
+      value: t(lit ? TEXT.on : TEXT.off, language),
+      color: lit ? WIDGET_COLORS.SUCCESS : WIDGET_COLORS.NEUTRAL,
+    },
+  ];
+  if (segment && Number.isInteger(segment.fx)) {
+    items.push({
+      label: t(TEXT.effect, language),
+      icon: 'play',
+      value: fitStatus(nameOf(controller.effects, segment.fx) ?? String(segment.fx)),
+      color: WIDGET_COLORS.INFO,
+    });
+  }
+  if (segment && Number.isInteger(segment.pal) && has(FEATURE_KEYS.PALETTE)) {
+    items.push({
+      label: t(TEXT.palette, language),
+      icon: 'droplet',
+      value: fitStatus(nameOf(controller.palettes, segment.pal) ?? String(segment.pal)),
+      color: WIDGET_COLORS.NEUTRAL,
+    });
+  }
+  const active = activePresetId(state);
+  if (onController) {
+    items.push({
+      label: t(TEXT.preset, language),
+      icon: 'bookmark',
+      value:
+        active > 0
+          ? fitStatus(nameOf(controller.presets, active) ?? String(active))
+          : t(TEXT.none, language),
+      color: active > 0 ? WIDGET_COLORS.PRIMARY : WIDGET_COLORS.NEUTRAL,
+    });
+  }
+
+  const components = [
+    { type: 'text', variant: 'caption', text: caption.join(' · ') },
+    {
+      type: 'value',
+      device_feature: ids.feature(FEATURE_KEYS.BRIGHTNESS),
+      label: t(TEXT.brightness, language),
+      icon: 'sun',
+    },
+    { type: 'status', items },
+  ];
+
+  const buttons = [];
+  if (onController) {
+    favoritePresets(controller).forEach((preset, index) => {
+      buttons.push({
+        type: 'button',
+        label: fitButton(preset.name),
+        icon: preset.id === active ? ACTIVE_ICON : 'bookmark',
+        style: 'secondary',
+        // Numbered keys: the core drops a button whose action key is taken.
+        action: { key: `${PRESET_ACTION_PREFIX}${index + 1}`, params: { preset: preset.id } },
+      });
+    });
+  }
+  if (controller.effects.length > 0) {
+    const current = segment && Number.isInteger(segment.fx) ? String(segment.fx) : undefined;
+    const options = controller.effects.map(({ id, name }) => ({
+      value: String(id),
+      label: { en: name },
+    }));
+    buttons.push({
+      type: 'button',
+      label: t(TEXT.effect, language),
+      icon: 'play',
+      style: 'secondary',
+      action: {
+        key: EFFECT_ACTION,
+        fields: [
+          {
+            key: 'effect',
+            type: 'select',
+            required: true,
+            label: TEXT.effect,
+            options,
+            ...(options.some((option) => option.value === current) ? { default: current } : {}),
+          },
+        ],
+      },
+    });
+  }
+  return { ttl_seconds: 60, components: [...components, ...buttons.slice(0, 4)] };
+}
+
+async function action(hub, { actionKey, params = {}, settings, values }) {
+  const device = settings?.device;
+  if (!device) {
+    throw new Error(TEXT.pick.en);
+  }
+  if (actionKey.startsWith(PRESET_ACTION_PREFIX)) {
+    const preset = await hub.applyPreset(device, params.preset);
+    return { message: prefixed(TEXT.presetApplied, preset.name) };
+  }
+  if (actionKey === EFFECT_ACTION) {
+    if (!values || values.effect === undefined) {
+      // A core without action fields runs the action without the form.
+      throw new Error(TEXT.updateGladys.en);
+    }
+    const effect = await hub.startEffect(device, { effect: values.effect });
+    return { message: prefixed(TEXT.effectStarted, effect.name) };
+  }
+  throw new Error(`Unknown action ${actionKey}`);
 }
 
 export const WIDGETS = {
-  [DEMO_STATUS_WIDGET]: {
-    // `settings` holds the per-instance values of the declared `settings`
-    // (none here); `language` and `units` are those of the user viewing the
-    // dashboard, for the values you format yourself. Multi-language objects
-    // (`{ en, fr }`) are picked by the core, like everywhere else.
-    async get(gladys, { config }) {
-      logger.debug(`onWidgetGet <- ${DEMO_STATUS_WIDGET}`);
-      return {
-        // Reload policy: the computed parts below only change with the
-        // config, and index.js nudges the widget on every (re)connection and
-        // config update (see refreshWidgets) — the TTL is just a safety net.
-        ttl_seconds: 300,
-        components: [
-          // Device-bound tiles: LIVE, they follow the published states over
-          // the core's real-time path. No TTL, no nudge involved.
-          {
-            type: 'value',
-            label: { en: 'Temperature', fr: 'Température' },
-            icon: 'thermometer',
-            device_feature: featureExternalId(
-              gladys,
-              config,
-              weatherStation,
-              DEVICE_FEATURE_CATEGORIES.TEMPERATURE_SENSOR,
-            ),
-          },
-          {
-            type: 'value',
-            label: { en: 'Office plug', fr: 'Prise du bureau' },
-            icon: 'zap',
-            device_feature: featureExternalId(
-              gladys,
-              config,
-              plug,
-              DEVICE_FEATURE_CATEGORIES.ENERGY_SENSOR,
-            ),
-          },
-          // Computed rows: what the integration knows that no device feature
-          // carries. Served from the core cache until the TTL or a nudge.
-          {
-            type: 'status',
-            items: [
-              {
-                label: { en: 'Plug connection', fr: 'Connexion de la prise' },
-                icon: 'wifi',
-                ...plugConnectionStatus(gladys, config),
-              },
-              {
-                label: { en: 'Observed location', fr: 'Position observée' },
-                icon: 'map-pin',
-                value: `${config.latitude.toFixed(2)}, ${config.longitude.toFixed(2)}`,
-                color: WIDGET_COLORS.NEUTRAL,
-              },
-            ],
-          },
-          // `params` are declared HERE and sent back as-is: the handler never
-          // receives user input (a dashboard can hang on a public wall).
-          {
-            type: 'button',
-            label: { en: 'Identify the light', fr: 'Identifier la lampe' },
-            icon: 'eye',
-            style: 'secondary',
-            action: {
-              key: DEMO_STATUS_ACTIONS.IDENTIFY_LIGHT,
-              params: { device: light.deviceExternalId(gladys) },
-            },
-          },
-        ],
-      };
-    },
-
-    // Resolve an optional toast (string or multi-language object, ≤ 200
-    // characters). After a successful action the core drops the cached
-    // content and every open dashboard refetches it: no nudge needed.
-    async action(gladys, { actionKey, params, config }) {
-      logger.info(`onWidgetAction <- ${DEMO_STATUS_WIDGET}.${actionKey}`);
-      if (actionKey === DEMO_STATUS_ACTIONS.IDENTIFY_LIGHT) {
-        return identifyDevice(gladys, params.device, config);
-      }
-      // Throwing acks the action as failed: the message reaches the user.
-      throw new Error(`Unknown widget action: ${actionKey}`);
-    },
-  },
+  [WIDGET_KEY]: { get, action },
 };
-
-/**
- * Freshness nudge: ask the core to re-pull every widget NOW instead of
- * waiting for the content TTL. Call it when you KNOW a computed content
- * changed (here: the config, which drives the plug transport and the observed
- * location) — and after every (re)connection, since the nudges are
- * fire-and-forget: rate-limited core-side to 1 per 10 s per widget, dropped
- * silently while disconnected.
- */
-export function refreshWidgets(gladys) {
-  for (const key of Object.keys(WIDGETS)) {
-    gladys.requestWidgetRefresh(key);
-  }
-}

@@ -1,59 +1,137 @@
-# Demo Devices Template
+# WLED
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+Control your [WLED](https://kno.wled.ge) LED strips from Gladys, over your local
+network: color, brightness, effects, palettes, presets and segments, updated in
+real time.
 
-## What you get
+> **Developed without the hardware: feedback welcome.** This integration was
+> built and tested against real answers of WLED controllers, not against
+> physical strips. If something does not work as described, please say so on
+> the [Gladys forum](https://community.gladysassistant.com) or in the
+> [issues](https://github.com/guim31/gladys-wled/issues).
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+## What you need
 
-## Configuration
+- Gladys Assistant 5.1.0 or later.
+- A WLED controller (ESP8266 or ESP32) connected to the **same network** as
+  Gladys. WLED 0.14 or later is recommended; 0.13 should work.
 
-1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+## Add your controllers
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+1. Install the integration from the Gladys catalog. The install screen asks to
+   let Gladys look for WLED controllers on the network (mDNS, `_wled._tcp`):
+   accept.
+2. Open the **Discovery** tab: every controller found is listed, with the name
+   set in WLED. Click **Add**, pick a room, save.
+3. A controller is missing? Find its IP address in the WLED app (_Config_ →
+   _WiFi Setup_) or in your router, enter it in **Configuration** → _Controller
+   IP addresses_ (several addresses separated by commas), save, then open
+   **Discovery** again.
 
-## Actions
+Tip: give each controller a fixed IP address in your router (DHCP
+reservation). The integration recognizes a controller by its MAC address and
+follows it when its address changes, but a fixed address is found faster.
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+## What each device offers
+
+Each controller is one device:
+
+| Feature           | What it does                                                          |
+| ----------------- | --------------------------------------------------------------------- |
+| Light             | On / off                                                              |
+| Brightness        | 0 to 100 % (0 turns the strip off)                                    |
+| Color             | The color of the strip (RGB strips); picking one turns it on          |
+| Color temperature | From warm (2000 K) to cold (6535 K) white, on strips with CCT whites  |
+| White channel     | The white LEDs of RGBW strips, 0 to 100                               |
+| Effect            | The effect list of your controller (Solid, Rainbow, Fire 2012…)       |
+| Palette           | The color palette used by the effect                                  |
+| Effect speed      | 0 to 100                                                              |
+| Effect intensity  | 0 to 100                                                              |
+| Preset            | Your WLED presets and playlists; "None" once the state changed        |
+| Nightlight        | Starts the WLED nightlight (duration and mode set in WLED)            |
+| UDP sync          | Sends the changes to the other WLED controllers in sync with this one |
+
+Only what your strip can do is offered: no color temperature on a plain RGB
+strip, no white channel without white LEDs.
+
+The effect, palette and preset lists are read on the controller. A preset you
+save in WLED shows up in the list on its own, within seconds.
+
+### Segments
+
+WLED can split a strip into **segments**. By default, the controller device
+drives the segments **selected** in WLED, exactly like the WLED interface; on a
+strip with a single segment, that is the whole strip.
+
+To control each segment on its own, choose **Also one device per segment** in
+**Configuration** → _Segments_, save, then add the new devices from
+**Discovery**. They are offered for controllers with at least two segments,
+and are named after the segment names set in WLED. A segment device has its
+own light, brightness, color, effect, palette, speed and intensity; turning a
+segment on also turns the controller on. Presets, nightlight and sync stay on
+the controller device.
+
+Feature names are given when you add a device, in the language chosen in
+**Configuration** → _Language of the feature names_.
+
+## Real time
+
+Every controller tells Gladys about each change the moment it happens, whatever
+made it: the WLED app, a physical button, a schedule, an infrared remote, or
+another controller in sync. If the connection drops, the integration asks the
+controller for its state every 30 seconds while it reconnects.
+
+The badge on each device shows **local** when the controller answers, and
+**unreachable** when it does not (unplugged, Wi-Fi lost). Commands sent to an
+unreachable controller fail with a message.
 
 ## Scenes
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+The integration adds its own cards to the scene editor, under
+**Integrations**:
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+- **Apply a WLED preset** (action): applies a preset or starts a playlist,
+  given by its **name** (as written in WLED, case does not matter) or its
+  **number**. The following actions can read the preset number and name.
+- **Start a WLED effect** (action): turns the light on and starts an effect,
+  given by its name (for example `Rainbow`) or number, with an optional palette
+  (for example `Party`), speed and intensity (0 to 100). Choose a segment device
+  to start the effect on that segment only.
+- **WLED preset activated** (trigger): starts the scene when a preset or
+  playlist is started **outside Gladys** (WLED app, button, schedule, remote).
+  Optionally pick the controller and type the preset name; left empty, any
+  preset matches. The following actions can read `preset` (its name) and
+  `preset_id` (its number). Presets applied by Gladys itself do not fire it,
+  so a scene cannot loop on itself.
+
+Turning on, brightness and color are the standard Gladys light actions.
 
 ## Dashboard
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+Add the **WLED** widget to a dashboard and pick a controller (or a segment
+device) in its settings. It shows:
+
+- the brightness, live;
+- whether the light is on, the current effect, palette and preset;
+- up to three **preset buttons**: the presets you marked as favorites in WLED
+  (give them a _Quick load label_ in the preset settings), or your first three
+  presets if none is marked; the active one has a check mark;
+- an **Effect** button that opens a list of the effects to start one.
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **No controller in Discovery**: Gladys and the controller must be on the same
+  network (mDNS does not cross routers or VLANs). Enter the IP address in
+  **Configuration**, then use **Search for controllers**: the message under the
+  button lists the controllers found and how they are reached.
+- **A controller stays unreachable**: check that its web page opens at
+  `http://<its address>` from a computer on the same network. Names ending in
+  `.local` do not work in the integration: use the IP address.
+- **States arrive late**: on a controller built without WebSocket support,
+  changes made outside Gladys take up to 30 seconds to show. WLED also accepts
+  a limited number of WebSocket clients at once: close the WLED app tabs you do
+  not use.
+- The integration logs everything it does: open the integration logs from the
+  Gladys interface, with `LOG_LEVEL=debug` for the full detail.
+
+This integration is not affiliated with the WLED project.

@@ -31,16 +31,22 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
+index.js                          SDK wiring only: src/app.js registers the handlers before connect()
+src/app.js                        every SDK handler -> the hub (also used by the tests)
+src/hub.js                        discovery, live links, states, commands, preset trigger
+src/devices.js                    WLED controller -> Gladys devices, state values, commands
+src/discovery.js                  mDNS results (scanNetwork), address probing
+src/wled/client.js                HTTP client of the WLED JSON API (one request at a time)
+src/wled/socket.js                WebSocket /ws link: reconnection, keepalive
+src/wled/model.js                 reading /json/info, /json/state, lists; conversions
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
 src/widgets.js                    dashboard widget handlers (manifest `widgets`)
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
+src/store.js                      /data/wled-state.json (known controllers)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
 docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test; test/helpers/fakeGladys.js stands in for the SDK
+test/                             node --test; helpers/fakeGladys.js stands in for the SDK,
+                                  helpers/fakeWled.js simulates controllers from test/fixtures/wled
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -167,6 +173,28 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
 - Les filtres de scène ne font qu'égalité et appartenance : un seuil reste le travail d'un capteur.
 - **Les clés de widgets, de déclencheurs et d'actions sont figées une fois publiées.**
 - `gladys_version` `>=5.1.0` dès qu'il y a widgets, déclencheurs ou actions de scène.
+
+**Appris sur WLED (gladys-wled)**
+
+- `light/effect-mode` et `light/effect-speed` ne sont **pas pilotables** dans le tableau de bord
+  (absents de `SUPPORTED_FEATURE_TYPES` du front) : ils s'affichent en lecture seule. Une liste lue
+  sur l'appareil passe par `text/select` (`supported_options` à valeurs texte, état publié en
+  `{ text }`), un curseur par `switch/dimmer` (sans unité : la catégorie `switch` n'a pas
+  `percent`).
+- Le panneau lumière du front regroupe les fonctionnalités d'éclairage d'un appareil **seulement si
+  chaque type y est unique** : deux `light/brightness` sur un même appareil font retomber sur des
+  lignes séparées. D'où un appareil par segment, plutôt que des fonctionnalités en double.
+- Les `supported_options` d'un appareil **déjà créé** sont mises à jour à chaque
+  `publishDiscoveredDevices` (sans bouton « Mettre à jour ») : republier quand une liste change.
+- Dans les `fields` d'une action de widget, chaque option de `select` a un **libellé
+  multi-langue** (`{ en: … }`), comme dans le manifeste : le cœur valide avec
+  `validateConfigField` et jette le bouton sinon. `validateWidgetContent` ne le voit pas.
+- Node 22+ fournit `WebSocket` en global : pas besoin de la dépendance `ws`. Le SDK 0.14.0 publié a
+  `scanNetwork` mais pas `parseMdnsTxt` (le réécrire, quelques lignes).
+- Un nom mDNS (`xxx.local`) ne se résout pas dans le conteneur : demander des adresses IP en
+  secours de la découverte médiée.
+- Dans les tests, `AbortSignal.timeout` ne retient pas la boucle d'événements : un test qui attend
+  un délai d'expiration de `fetch` doit garder un minuteur actif.
 
 ## Store
 
