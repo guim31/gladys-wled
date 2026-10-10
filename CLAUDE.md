@@ -108,6 +108,14 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
 
 ## Pièges du cœur Gladys
 
+- **Cibler la dernière version publiée du cœur** : la spec de `master` décrit des fonctions non
+  publiées. Vérifier qu'une fonction est livrée par `git tag --contains <commit>` sur le dépôt
+  Gladys. Exemple payé sur gladys-wled 1.0.1 : les formulaires derrière un bouton de widget
+  (`action.fields`, GladysAssistant/Gladys#3168, commit 3feb2cf8) ne sont dans aucune version
+  (5.1.4 est la dernière) ; le cœur jette les `fields` et relaie le clic sans valeurs, le bouton
+  ne fait rien. Boutons directs à la place, réglages du widget pour les choix (`multi_select`
+  à options statiques).
+
 **Appareils et fonctionnalités**
 
 - **Polling** : le planificateur n'interroge un appareil que si `should_poll: true` **et**
@@ -186,7 +194,8 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
   lignes séparées. D'où un appareil par segment, plutôt que des fonctionnalités en double.
 - Les `supported_options` d'un appareil **déjà créé** sont mises à jour à chaque
   `publishDiscoveredDevices` (sans bouton « Mettre à jour ») : republier quand une liste change.
-- Dans les `fields` d'une action de widget, chaque option de `select` a un **libellé
+- Le jour où ils seront publiés (pas avant Gladys > 5.1.4) : dans les `fields` d'une action de
+  widget, chaque option de `select` a un **libellé
   multi-langue** (`{ en: … }`), comme dans le manifeste : le cœur valide avec
   `validateConfigField` et jette le bouton sinon. `validateWidgetContent` ne le voit pas.
 - Node 22+ fournit `WebSocket` en global : pas besoin de la dépendance `ws`. Le SDK 0.14.0 publié a

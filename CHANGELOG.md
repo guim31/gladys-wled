@@ -10,6 +10,13 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Fixed
+
+- The "Effect" button of the WLED widget did nothing on a real Gladys: buttons
+  opening a form need a Gladys newer than 5.1.4. The widget now shows one-tap
+  buttons for the effects chosen in its settings (Solid and Rainbow by default),
+  next to the favorite presets.
+
 ## [1.0.1] - 2026-10-10
 
 ### Added

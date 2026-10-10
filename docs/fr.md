@@ -121,11 +121,18 @@ un appareil de segment) dans ses réglages. Il affiche :
 
 - la luminosité, en direct ;
 - si la lumière est allumée, l'effet, la palette et le préréglage en cours ;
-- jusqu'à trois **boutons de préréglages** : les préréglages marqués comme favoris dans
-  WLED (donnez-leur un _Quick load label_ dans les réglages du préréglage), ou vos
-  trois premiers préréglages si aucun n'est marqué ; celui qui est actif porte une
-  coche ;
-- un bouton **Effet** qui ouvre la liste des effets pour en lancer un.
+- des boutons en un geste, quatre au plus :
+  - vos **préréglages favoris** : ceux marqués dans WLED (donnez-leur un _Quick
+    load label_ dans les réglages du préréglage), ou vos premiers préréglages si
+    aucun n'est marqué ;
+  - les **effets** choisis dans les réglages du widget, sous _Boutons d'effets_
+    (Solid et Rainbow tant que vous ne les changez pas ; un effet que votre
+    contrôleur n'a pas est omis). Avec des préréglages sur le widget, deux
+    places restent aux effets.
+
+  Le préréglage ou l'effet actif porte une coche. Pour lancer un autre effet,
+  utilisez la liste _Effet_ de l'appareil, ou l'action de scène _Lancer un effet
+  WLED_.
 
 ## En cas de problème
 

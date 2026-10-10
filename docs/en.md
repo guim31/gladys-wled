@@ -113,10 +113,17 @@ device) in its settings. It shows:
 
 - the brightness, live;
 - whether the light is on, the current effect, palette and preset;
-- up to three **preset buttons**: the presets you marked as favorites in WLED
-  (give them a _Quick load label_ in the preset settings), or your first three
-  presets if none is marked; the active one has a check mark;
-- an **Effect** button that opens a list of the effects to start one.
+- one-tap buttons, four at most:
+  - your **favorite presets**: the ones you marked in WLED (give them a _Quick
+    load label_ in the preset settings), or your first presets if none is
+    marked;
+  - the **effects** chosen in the widget settings, under _Effect buttons_
+    (Solid and Rainbow until you change them; an effect your controller does
+    not have is left out). With presets on the widget, two places stay for the
+    effects.
+
+  The active preset or effect has a check mark. To start any other effect, use
+  the _Effect_ list of the device, or the _Start a WLED effect_ scene action.
 
 ## Troubleshooting
 

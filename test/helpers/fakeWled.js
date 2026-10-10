@@ -104,7 +104,13 @@ export function createController(fixture, { presets, noSi = false, host } = {}) 
       if (change.udpn && typeof change.udpn === 'object') {
         state.udpn = { ...state.udpn, ...change.udpn };
       }
-      const segments = Array.isArray(change.seg) ? change.seg : change.seg ? [change.seg] : [];
+      // In an array, an entry without id is the segment of its position; a
+      // single object without id goes to the selected segments.
+      const segments = Array.isArray(change.seg)
+        ? change.seg.map((entry, index) => ({ id: index, ...entry }))
+        : change.seg
+          ? [change.seg]
+          : [];
       for (const segmentChange of segments) {
         const targets = Number.isInteger(segmentChange.id)
           ? state.seg.filter((segment) => segment.id === segmentChange.id)

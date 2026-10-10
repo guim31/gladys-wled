@@ -241,8 +241,8 @@
       "key": "wled",
       "label": { "en": "WLED", "fr": "WLED" },
       "description": {
-        "en": "Favorite presets in one tap, the current effect, palette and preset, and an effect picker.",
-        "fr": "Préréglages favoris en un geste, effet, palette et préréglage en cours, et un choix d'effet."
+        "en": "Favorite presets and chosen effects in one tap, with the current effect, palette and preset.",
+        "fr": "Préréglages favoris et effets choisis en un geste, avec effet, palette et préréglage en cours."
       },
       "icon": "sun",
       "action_timeout_seconds": 15,
@@ -253,6 +253,31 @@
           "source": "devices",
           "label": { "en": "WLED device", "fr": "Appareil WLED" },
           "required": true
+        },
+        {
+          "key": "effects",
+          "type": "multi_select",
+          "label": { "en": "Effect buttons", "fr": "Boutons d'effets" },
+          "description": {
+            "en": "Effects shown as one-tap buttons, when the controller has them (four buttons at most with the favorite presets).",
+            "fr": "Effets affichés en boutons, quand le contrôleur les a (quatre boutons au plus avec les préréglages favoris)."
+          },
+          "required": false,
+          "default": ["Solid", "Rainbow"],
+          "options": [
+            { "value": "Solid", "label": { "en": "Solid", "fr": "Solid" } },
+            { "value": "Rainbow", "label": { "en": "Rainbow", "fr": "Rainbow" } },
+            { "value": "Colorloop", "label": { "en": "Colorloop", "fr": "Colorloop" } },
+            { "value": "Breathe", "label": { "en": "Breathe", "fr": "Breathe" } },
+            { "value": "Candle", "label": { "en": "Candle", "fr": "Candle" } },
+            { "value": "Fire 2012", "label": { "en": "Fire 2012", "fr": "Fire 2012" } },
+            { "value": "Twinkle", "label": { "en": "Twinkle", "fr": "Twinkle" } },
+            { "value": "Aurora", "label": { "en": "Aurora", "fr": "Aurora" } },
+            { "value": "Fireworks", "label": { "en": "Fireworks", "fr": "Fireworks" } },
+            { "value": "Meteor", "label": { "en": "Meteor", "fr": "Meteor" } },
+            { "value": "Pacifica", "label": { "en": "Pacifica", "fr": "Pacifica" } },
+            { "value": "Lake", "label": { "en": "Lake", "fr": "Lake" } }
+          ]
         }
       ]
     }

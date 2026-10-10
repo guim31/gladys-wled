@@ -11,7 +11,7 @@ import { DEFAULT_CONFIG, LANGUAGES, SEGMENT_MODES } from '../src/config.js';
 import { MDNS_SERVICE } from '../src/discovery.js';
 import { PRESET_TRIGGER, WIDGET_KEY } from '../src/hub.js';
 import { SCENE_ACTIONS } from '../src/scenes.js';
-import { WIDGETS } from '../src/widgets.js';
+import { DEFAULT_WIDGET_EFFECTS, EFFECT_CHOICES, WIDGETS } from '../src/widgets.js';
 import { FIXTURES, createController, settle } from './helpers/fakeWled.js';
 import { createWorld, controllerId } from './helpers/world.js';
 
@@ -153,6 +153,16 @@ test('every widgets key has a handler, and vice versa', () => {
   assert.deepEqual(Object.keys(WIDGETS), [WIDGET_KEY]);
   assert.deepEqual(handlerKeys('widgetGet:'), [WIDGET_KEY]);
   assert.deepEqual(handlerKeys('widgetAction:'), [WIDGET_KEY]);
+});
+
+test('the widget effect setting offers the choices and defaults of the code', () => {
+  const setting = manifest.widgets[0].settings.find((field) => field.key === 'effects');
+  assert.equal(setting.type, 'multi_select');
+  assert.deepEqual(
+    setting.options.map((option) => option.value),
+    EFFECT_CHOICES,
+  );
+  assert.deepEqual(setting.default, DEFAULT_WIDGET_EFFECTS);
 });
 
 test('config_schema defaults and options stay consistent with the code', () => {
