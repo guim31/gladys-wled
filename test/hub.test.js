@@ -134,7 +134,11 @@ test('a command is sent to WLED and its answer published once', async (t) => {
 
   await gladys.fake.call('setValue', device(id), feature(id, 'color'), 0x00ff00);
   await settle(world.hub);
-  assert.deepEqual(controller.posts.at(-1), { seg: [{ id: 0, col: [[0, 255, 0]] }], v: true });
+  assert.deepEqual(controller.posts.at(-1), {
+    on: true,
+    seg: [{ id: 0, col: [[0, 255, 0]] }],
+    v: true,
+  });
   assert.equal(gladys.fake.lastState(`${id}:color`), 0x00ff00);
 });
 

@@ -40,7 +40,7 @@ Each controller is one device:
 | ----------------- | --------------------------------------------------------------------- |
 | Light             | On / off                                                              |
 | Brightness        | 0 to 100 % (0 turns the strip off)                                    |
-| Color             | The color of the strip (RGB strips)                                   |
+| Color             | The color of the strip (RGB strips); picking one turns it on          |
 | Color temperature | From warm (2000 K) to cold (6535 K) white, on strips with CCT whites  |
 | White channel     | The white LEDs of RGBW strips, 0 to 100                               |
 | Effect            | The effect list of your controller (Solid, Rainbow, Fire 2012…)       |

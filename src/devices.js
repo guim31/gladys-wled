@@ -84,7 +84,7 @@ const NAMES = {
     palette: 'Palette',
     'effect-speed': "Vitesse de l'effet",
     'effect-intensity': "Intensité de l'effet",
-    preset: 'Preset',
+    preset: 'Préréglage',
     nightlight: 'Veilleuse',
     sync: 'Synchro UDP',
     noPreset: 'Aucun',
@@ -343,7 +343,9 @@ function lightValues(state, segment, power, brightness) {
   }
   const color = primaryColor(segment);
   if (color) {
-    values[FEATURE_KEYS.COLOR] = rgbToInt(color);
+    // Pure white on the white channel ([0, 0, 0, W]) is white, not black.
+    const whiteOnly = color[0] === 0 && color[1] === 0 && color[2] === 0 && color[3] > 0;
+    values[FEATURE_KEYS.COLOR] = whiteOnly ? 0xffffff : rgbToInt(color);
     values[FEATURE_KEYS.WHITE] = toPercent(color[3]);
   }
   const kelvin = cctToKelvin(segment.cct);
@@ -444,8 +446,20 @@ export function commandFor(controller, segmentId, key, value) {
     }
 
     case FEATURE_KEYS.COLOR: {
+      // WLED sets the channels left out to 0: on a strip with a white
+      // channel, send each segment's current white along. Picking a colour
+      // also lights a strip that is off, like the other Gladys lights.
       const [r, g, b] = intToRgb(number);
-      return segmentsChange(ids, { col: [[r, g, b]] });
+      const seg = ids.map((id) => {
+        if (!capabilities.white) {
+          return { id, col: [[r, g, b]] };
+        }
+        const w = primaryColor(findSegment(state, id)?.segment)?.[3] ?? 0;
+        return { id, col: [[r, g, b, w]] };
+      });
+      return onController
+        ? { on: true, seg }
+        : { on: true, seg: seg.map((entry) => ({ ...entry, on: true })) };
     }
 
     case FEATURE_KEYS.COLOR_TEMPERATURE: {

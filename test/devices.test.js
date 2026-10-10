@@ -138,7 +138,7 @@ test('feature names follow the configured language', () => {
       'Palette',
       "Vitesse de l'effet",
       "Intensité de l'effet",
-      'Preset',
+      'Préréglage',
       'Veilleuse',
       'Synchro UDP',
     ],
@@ -202,7 +202,8 @@ test('controller values come from the main segment and the global state', () => 
 
   // RGBW + CCT, preset 2 active.
   const cct = controllerValues(record(FIXTURES.rgbwCct));
-  assert.equal(cct[FEATURE_KEYS.COLOR], 0);
+  // [0, 0, 0, 255]: white on the white channel, published as white, not black.
+  assert.equal(cct[FEATURE_KEYS.COLOR], 0xffffff);
   assert.equal(cct[FEATURE_KEYS.WHITE], 100);
   assert.equal(cct[FEATURE_KEYS.COLOR_TEMPERATURE], 2943); // cct 53
   assert.deepEqual(cct[FEATURE_KEYS.PRESET], { text: '2' });
@@ -225,7 +226,10 @@ test('controller commands go to the selected segments', () => {
   assert.deepEqual(command('brightness', 50), { on: true, bri: 128 });
   assert.deepEqual(command('brightness', 0), { on: false });
   assert.deepEqual(command('brightness', 0.2), { on: true, bri: 1 });
-  assert.deepEqual(command('color', 0x112233), { seg: [{ id: 1, col: [[0x11, 0x22, 0x33]] }] });
+  assert.deepEqual(command('color', 0x112233), {
+    on: true,
+    seg: [{ id: 1, col: [[0x11, 0x22, 0x33]] }],
+  });
   assert.deepEqual(command('effect', '9'), { seg: [{ id: 1, fx: 9 }] });
   assert.deepEqual(command('palette', '6'), { seg: [{ id: 1, pal: 6 }] });
   assert.deepEqual(command('effect-speed', 100), { seg: [{ id: 1, sx: 255 }] });
@@ -262,6 +266,34 @@ test('colour temperature turns the light white, white channel keeps the colour',
   assert.deepEqual(commandFor(rgbw, null, 'white', 50), {
     seg: [{ id: 0, col: [[255, 0, 0, 128]] }],
   });
+});
+
+test('a colour keeps the white channel of RGBW strips and lights the strip', () => {
+  // RGBW fixture: primary colour [255, 0, 0, 139].
+  const rgbw = record(FIXTURES.rgbwNoWebsocket);
+  assert.deepEqual(commandFor(rgbw, null, 'color', 0x0000ff), {
+    on: true,
+    seg: [{ id: 0, col: [[0, 0, 255, 139]] }],
+  });
+  // A segment device: its own white, the segment turned on too.
+  const two = record(FIXTURES.rgbTwoSegments);
+  two.state = structuredClone(two.state);
+  two.state.seg[0].col[0] = [10, 20, 30, 77];
+  two.rawInfo = { ...two.rawInfo, leds: { ...two.rawInfo.leds, seglc: [3, 3] } };
+  assert.deepEqual(commandFor(two, 0, 'color', 0x00ff00), {
+    on: true,
+    seg: [{ id: 0, col: [[0, 255, 0, 77]], on: true }],
+  });
+});
+
+test('pure white on the white channel reads white, a dark colour stays as is', () => {
+  const rgbw = record(FIXTURES.rgbwNoWebsocket);
+  rgbw.state = structuredClone(rgbw.state);
+  rgbw.state.seg[0].col[0] = [0, 0, 0, 200];
+  assert.equal(controllerValues(rgbw)[FEATURE_KEYS.COLOR], 0xffffff);
+  assert.equal(controllerValues(rgbw)[FEATURE_KEYS.WHITE], 78);
+  rgbw.state.seg[0].col[0] = [0, 0, 0, 0];
+  assert.equal(controllerValues(rgbw)[FEATURE_KEYS.COLOR], 0);
 });
 
 test('commands refuse what the controller does not have', () => {

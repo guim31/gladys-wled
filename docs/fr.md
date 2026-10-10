@@ -1,7 +1,7 @@
 # WLED
 
 Pilotez vos rubans LED [WLED](https://kno.wled.ge) depuis Gladys, sur votre
-réseau local : couleur, luminosité, effets, palettes, presets et segments, mis
+réseau local : couleur, luminosité, effets, palettes, préréglages et segments, mis
 à jour en temps réel.
 
 > **Développée sans le matériel : retours bienvenus.** Cette intégration a été
@@ -41,22 +41,22 @@ Chaque contrôleur est un appareil :
 | ---------------------- | ---------------------------------------------------------------------------- |
 | Éclairage              | Marche / arrêt                                                               |
 | Luminosité             | De 0 à 100 % (0 éteint le ruban)                                             |
-| Couleur                | La couleur du ruban (rubans RGB)                                             |
+| Couleur                | La couleur du ruban (rubans RGB) ; la choisir l'allume                       |
 | Température de couleur | Du blanc chaud (2000 K) au blanc froid (6535 K), sur les rubans à blancs CCT |
 | Canal blanc            | Les LED blanches des rubans RGBW, de 0 à 100                                 |
 | Effet                  | La liste des effets de votre contrôleur (Solid, Rainbow, Fire 2012…)         |
 | Palette                | La palette de couleurs utilisée par l'effet                                  |
 | Vitesse de l'effet     | De 0 à 100                                                                   |
 | Intensité de l'effet   | De 0 à 100                                                                   |
-| Preset                 | Vos presets et playlists WLED ; « Aucun » dès que l'état a changé            |
+| Préréglage             | Vos préréglages et playlists WLED ; « Aucun » dès que l'état a changé        |
 | Veilleuse              | Lance la veilleuse WLED (durée et mode réglés dans WLED)                     |
 | Synchro UDP            | Envoie les changements aux autres contrôleurs WLED synchronisés              |
 
 Seul ce que votre ruban sait faire est proposé : pas de température de couleur
 sur un simple ruban RGB, pas de canal blanc sans LED blanches.
 
-Les listes d'effets, de palettes et de presets sont lues sur le contrôleur. Un
-preset enregistré dans WLED apparaît tout seul dans la liste, en quelques
+Les listes d'effets, de palettes et de préréglages sont lues sur le contrôleur. Un
+préréglage enregistré dans WLED apparaît tout seul dans la liste, en quelques
 secondes.
 
 ### Segments
@@ -71,7 +71,7 @@ nouveaux appareils depuis **Découverte**. Ils sont proposés pour les
 contrôleurs qui ont au moins deux segments, et portent les noms des segments
 réglés dans WLED. Un appareil de segment a son propre éclairage, sa luminosité,
 sa couleur, son effet, sa palette, sa vitesse et son intensité ; allumer un
-segment allume aussi le contrôleur. Les presets, la veilleuse et la synchro
+segment allume aussi le contrôleur. Les préréglages, la veilleuse et la synchro
 restent sur l'appareil du contrôleur.
 
 Les noms des fonctionnalités sont donnés à l'ajout d'un appareil, dans la
@@ -94,21 +94,21 @@ envoyée à un contrôleur injoignable échoue avec un message.
 L'intégration ajoute ses propres cartes à l'éditeur de scènes, dans la
 catégorie **Intégrations** :
 
-- **Appliquer un preset WLED** (action) : applique un preset ou lance une
+- **Appliquer un préréglage WLED** (action) : applique un préréglage ou lance une
   playlist, désigné par son **nom** (tel qu'écrit dans WLED, majuscules
   indifférentes) ou son **numéro**. Les actions suivantes peuvent lire le
-  numéro et le nom du preset.
+  numéro et le nom du préréglage.
 - **Lancer un effet WLED** (action) : allume la lumière et lance un effet,
   désigné par son nom (par exemple `Rainbow`) ou son numéro, avec une palette
   (par exemple `Party`), une vitesse et une intensité (de 0 à 100)
   facultatives. Choisissez un appareil de segment pour lancer l'effet sur ce
   seul segment.
-- **Preset WLED activé** (déclencheur) : lance la scène quand un preset ou une
+- **Préréglage WLED activé** (déclencheur) : lance la scène quand un préréglage ou une
   playlist est lancé **hors de Gladys** (application WLED, bouton,
   planification, télécommande). Choisissez éventuellement le contrôleur et
-  saisissez le nom du preset ; laissés vides, n'importe quel preset convient.
+  saisissez le nom du préréglage ; laissés vides, n'importe quel préréglage convient.
   Les actions suivantes peuvent lire `preset` (son nom) et `preset_id` (son
-  numéro). Les presets appliqués par Gladys elle-même ne le déclenchent pas :
+  numéro). Les préréglages appliqués par Gladys elle-même ne le déclenchent pas :
   une scène ne peut pas boucler sur elle-même.
 
 Allumer, la luminosité et la couleur sont les actions d'éclairage habituelles
@@ -120,10 +120,10 @@ Ajoutez le widget **WLED** à un tableau de bord et choisissez un contrôleur (o
 un appareil de segment) dans ses réglages. Il affiche :
 
 - la luminosité, en direct ;
-- si la lumière est allumée, l'effet, la palette et le preset en cours ;
-- jusqu'à trois **boutons de presets** : les presets marqués comme favoris dans
-  WLED (donnez-leur un _Quick load label_ dans les réglages du preset), ou vos
-  trois premiers presets si aucun n'est marqué ; celui qui est actif porte une
+- si la lumière est allumée, l'effet, la palette et le préréglage en cours ;
+- jusqu'à trois **boutons de préréglages** : les préréglages marqués comme favoris dans
+  WLED (donnez-leur un _Quick load label_ dans les réglages du préréglage), ou vos
+  trois premiers préréglages si aucun n'est marqué ; celui qui est actif porte une
   coche ;
 - un bouton **Effet** qui ouvre la liste des effets pour en lancer un.
 

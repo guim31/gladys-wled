@@ -41,7 +41,7 @@ const TEXT = {
   brightness: { en: 'Brightness', fr: 'Luminosité' },
   effect: { en: 'Effect', fr: 'Effet' },
   palette: { en: 'Palette', fr: 'Palette' },
-  preset: { en: 'Preset', fr: 'Preset' },
+  preset: { en: 'Preset', fr: 'Préréglage' },
   power: { en: 'Light', fr: 'Éclairage' },
   on: { en: 'On', fr: 'Allumé' },
   off: { en: 'Off', fr: 'Éteint' },
@@ -49,7 +49,7 @@ const TEXT = {
   unreachable: { en: 'unreachable', fr: 'injoignable' },
   live: { en: 'live data', fr: 'flux en direct' },
   leds: { en: 'LEDs', fr: 'LED' },
-  presetApplied: { en: 'Preset applied: ', fr: 'Preset appliqué : ' },
+  presetApplied: { en: 'Preset applied: ', fr: 'Préréglage appliqué : ' },
   effectStarted: { en: 'Effect started: ', fr: 'Effet lancé : ' },
   updateGladys: {
     en: 'Update Gladys to pick an effect from the widget.',
@@ -71,6 +71,12 @@ export function favoritePresets(controller) {
 }
 
 const nameOf = (list, id) => list.find((entry) => entry.id === id)?.name;
+
+// The core cuts a status value past 40 characters and a button label past 24:
+// cut long names cleanly here instead, with an ellipsis.
+const fit = (text, max) => (text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text);
+export const fitStatus = (text) => fit(text, 40);
+export const fitButton = (text) => fit(text, 24);
 
 function message(text, language) {
   return {
@@ -120,7 +126,7 @@ async function get(hub, { settings, language = 'en' }) {
     items.push({
       label: t(TEXT.effect, language),
       icon: 'play',
-      value: nameOf(controller.effects, segment.fx) ?? String(segment.fx),
+      value: fitStatus(nameOf(controller.effects, segment.fx) ?? String(segment.fx)),
       color: WIDGET_COLORS.INFO,
     });
   }
@@ -128,7 +134,7 @@ async function get(hub, { settings, language = 'en' }) {
     items.push({
       label: t(TEXT.palette, language),
       icon: 'droplet',
-      value: nameOf(controller.palettes, segment.pal) ?? String(segment.pal),
+      value: fitStatus(nameOf(controller.palettes, segment.pal) ?? String(segment.pal)),
       color: WIDGET_COLORS.NEUTRAL,
     });
   }
@@ -139,7 +145,7 @@ async function get(hub, { settings, language = 'en' }) {
       icon: 'bookmark',
       value:
         active > 0
-          ? (nameOf(controller.presets, active) ?? String(active))
+          ? fitStatus(nameOf(controller.presets, active) ?? String(active))
           : t(TEXT.none, language),
       color: active > 0 ? WIDGET_COLORS.PRIMARY : WIDGET_COLORS.NEUTRAL,
     });
@@ -161,7 +167,7 @@ async function get(hub, { settings, language = 'en' }) {
     favoritePresets(controller).forEach((preset, index) => {
       buttons.push({
         type: 'button',
-        label: preset.name,
+        label: fitButton(preset.name),
         icon: preset.id === active ? ACTIVE_ICON : 'bookmark',
         style: 'secondary',
         // Numbered keys: the core drops a button whose action key is taken.

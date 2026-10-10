@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateWidgetContent } from '@gladysassistant/integration-sdk';
-import { favoritePresets } from '../src/widgets.js';
+import { favoritePresets, fitButton, fitStatus } from '../src/widgets.js';
 import { FIXTURES, createController, settle } from './helpers/fakeWled.js';
 import { createWorld, controllerId, segmentId } from './helpers/world.js';
 
@@ -122,7 +122,34 @@ test('the active preset is marked by its icon, and the widget follows the langua
   const status = content.components.find((c) => c.type === 'status');
   assert.deepEqual(status.items.at(-1).value, 'Preset 2');
   assert.equal(status.items[0].label, 'Éclairage');
+  assert.equal(status.items.at(-1).label, 'Préréglage');
   assert.match(content.components[0].text, /30 LED$/);
+});
+
+test('a long preset name is cut cleanly in the status list', async (t) => {
+  const long = 'Living room evening ambiance with warm amber glow';
+  const controller = createController(FIXTURES.rgb0154, {
+    presets: { 0: {}, 1: { n: long, on: true } },
+  });
+  const world = await createWorld({ controllers: [controller] });
+  t.after(() => world.app.stop());
+  const id = controllerId(world.gladys, controller);
+  await world.gladys.fake.call(
+    'setValue',
+    { external_id: id },
+    { external_id: `${id}:preset` },
+    '1',
+  );
+  const content = await get(world, { device: id });
+  assert.deepEqual(validateWidgetContent(content), []);
+  const value = content.components.find((c) => c.type === 'status').items.at(-1).value;
+  assert.equal(value, 'Living room evening ambiance with warm…');
+  assert.ok(value.length <= 40);
+  const button = content.components.find((c) => c.type === 'button');
+  assert.equal(button.label, 'Living room evening amb…');
+  assert.ok(button.label.length <= 24);
+  assert.equal(fitStatus('Short'), 'Short');
+  assert.equal(fitButton('Short'), 'Short');
 });
 
 test('presets with a quick-load label are the favourites', () => {
@@ -186,7 +213,7 @@ test('widget actions apply a preset or start the effect picked in the form', asy
   await settle(world.hub);
 
   assert.deepEqual(await act('preset_1', { preset: 4 }, { settings: { device: id } }), {
-    message: { en: 'Preset applied: Cozy', fr: 'Preset appliqué : Cozy' },
+    message: { en: 'Preset applied: Cozy', fr: 'Préréglage appliqué : Cozy' },
   });
   assert.deepEqual(controller.posts.at(-1), { ps: 4, v: true });
 
