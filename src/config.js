@@ -4,7 +4,7 @@
 // the rest of the code never deals with strings, blanks or `undefined`.
 // -----------------------------------------------------------------------------
 
-export const LANGUAGES = ['en', 'fr'];
+export const LANGUAGES = ['en', 'fr', 'de', 'es'];
 
 // `segment_devices` options: the controller device always drives the segments
 // selected in WLED; `all` also publishes one device per segment.

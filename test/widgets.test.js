@@ -309,18 +309,33 @@ test('widget actions apply a preset or start an effect', async (t) => {
   await settle(world.hub);
 
   assert.deepEqual(await act('preset_1', { preset: 4 }, { settings: { device: id } }), {
-    message: { en: 'Preset applied: Cozy', fr: 'Préréglage appliqué : Cozy' },
+    message: {
+      en: 'Preset applied: Cozy',
+      fr: 'Préréglage appliqué : Cozy',
+      de: 'Preset angewendet: Cozy',
+      es: 'Preajuste aplicado: Cozy',
+    },
   });
   assert.deepEqual(controller.posts.at(-1), { ps: 4, v: true });
 
   assert.deepEqual(await act('effect_2', { effect: 88 }, { settings: { device: id } }), {
-    message: { en: 'Effect started: Candle', fr: 'Effet lancé : Candle' },
+    message: {
+      en: 'Effect started: Candle',
+      fr: 'Effet lancé : Candle',
+      de: 'Effekt gestartet: Candle',
+      es: 'Efecto iniciado: Candle',
+    },
   });
   assert.deepEqual(controller.posts.at(-1), { on: true, seg: [{ id: 0, fx: 88 }], v: true });
 
   // The former picker's key still answers, for a core that sends the form.
   assert.deepEqual(await act('effect', {}, { settings: { device: id }, values: { effect: '9' } }), {
-    message: { en: 'Effect started: Rainbow', fr: 'Effet lancé : Rainbow' },
+    message: {
+      en: 'Effect started: Rainbow',
+      fr: 'Effet lancé : Rainbow',
+      de: 'Effekt gestartet: Rainbow',
+      es: 'Efecto iniciado: Rainbow',
+    },
   });
   assert.deepEqual(controller.posts.at(-1), { on: true, seg: [{ id: 0, fx: 9 }], v: true });
 

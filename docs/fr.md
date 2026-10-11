@@ -75,7 +75,10 @@ segment allume aussi le contrôleur. Les préréglages, la veilleuse et la synch
 restent sur l'appareil du contrôleur.
 
 Les noms des fonctionnalités sont donnés à l'ajout d'un appareil, dans la
-langue choisie dans **Configuration** → _Langue des noms de fonctionnalités_.
+langue choisie dans **Configuration** → _Langue des noms de fonctionnalités_ :
+anglais, français, allemand ou espagnol. Les textes de l'intégration
+(configuration, widget, scènes, messages) suivent la langue de votre Gladys dans
+ces quatre langues.
 
 ## Temps réel
 

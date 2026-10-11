@@ -10,6 +10,14 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Added
+
+- German and Spanish: the configuration, the "Search" action, the scene trigger
+  and actions, the widget and the integration messages now follow a Gladys in
+  German or Spanish. Feature names can also be given in German or Spanish
+  (Configuration → Language of the feature names). Effect and palette names
+  read on the controller stay as WLED gives them.
+
 ## [1.0.2] - 2026-10-10
 
 ### Fixed

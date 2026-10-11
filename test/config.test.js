@@ -22,7 +22,7 @@ test('normalizeConfig keeps the known values and drops the unknown ones', () => 
   assert.equal(config.segmentDevices, 'all');
   assert.equal(config.language, 'fr');
 
-  const odd = normalizeConfig({ segment_devices: 'some', language: 'de', hosts: 42 });
+  const odd = normalizeConfig({ segment_devices: 'some', language: 'it', hosts: 42 });
   assert.equal(odd.segmentDevices, DEFAULT_CONFIG.segment_devices);
   assert.equal(odd.language, DEFAULT_CONFIG.language);
   assert.deepEqual(odd.hosts, []);

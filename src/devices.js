@@ -57,7 +57,7 @@ export const NO_PRESET = 'none';
 
 // Feature names are frozen when the user creates the device: written in the
 // language chosen in the configuration at that moment.
-const NAMES = {
+export const NAMES = {
   en: {
     power: 'Light',
     brightness: 'Brightness',
@@ -89,6 +89,38 @@ const NAMES = {
     sync: 'Synchro UDP',
     noPreset: 'Aucun',
     segment: 'Segment',
+  },
+  de: {
+    power: 'Licht',
+    brightness: 'Helligkeit',
+    color: 'Farbe',
+    'color-temperature': 'Farbtemperatur',
+    white: 'Weißkanal',
+    effect: 'Effekt',
+    palette: 'Palette',
+    'effect-speed': 'Effektgeschwindigkeit',
+    'effect-intensity': 'Effektintensität',
+    preset: 'Preset',
+    nightlight: 'Nachtlicht',
+    sync: 'UDP-Sync',
+    noPreset: 'Keines',
+    segment: 'Segment',
+  },
+  es: {
+    power: 'Luz',
+    brightness: 'Brillo',
+    color: 'Color',
+    'color-temperature': 'Temperatura de color',
+    white: 'Canal blanco',
+    effect: 'Efecto',
+    palette: 'Paleta',
+    'effect-speed': 'Velocidad del efecto',
+    'effect-intensity': 'Intensidad del efecto',
+    preset: 'Preajuste',
+    nightlight: 'Luz nocturna',
+    sync: 'Sincronización UDP',
+    noPreset: 'Ninguno',
+    segment: 'Segmento',
   },
 };
 
