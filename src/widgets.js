@@ -62,36 +62,55 @@ export const EFFECT_CHOICES = [
 // colour, and the classic animation.
 export const DEFAULT_WIDGET_EFFECTS = ['Solid', 'Rainbow'];
 
-const TEXT = {
+export const TEXT = {
   pick: {
     en: 'Choose a WLED device in the settings of this widget.',
     fr: 'Choisissez un appareil WLED dans les réglages de ce widget.',
+    de: 'Wähle in den Einstellungen dieses Widgets ein WLED-Gerät aus.',
+    es: 'Elija un dispositivo WLED en la configuración de este widget.',
   },
   unknown: {
     en: 'This WLED device is not known yet: run a search in the integration.',
     fr: 'Cet appareil WLED est inconnu : lancez une recherche dans l’intégration.',
+    de: 'Dieses WLED-Gerät ist noch unbekannt: Starte eine Suche in der Integration.',
+    es: 'Este dispositivo WLED aún no es conocido: inicie una búsqueda en la integración.',
   },
-  brightness: { en: 'Brightness', fr: 'Luminosité' },
-  effect: { en: 'Effect', fr: 'Effet' },
-  palette: { en: 'Palette', fr: 'Palette' },
-  preset: { en: 'Preset', fr: 'Préréglage' },
-  power: { en: 'Light', fr: 'Éclairage' },
-  on: { en: 'On', fr: 'Allumé' },
-  off: { en: 'Off', fr: 'Éteint' },
-  none: { en: 'None', fr: 'Aucun' },
-  unreachable: { en: 'unreachable', fr: 'injoignable' },
-  live: { en: 'live data', fr: 'flux en direct' },
-  leds: { en: 'LEDs', fr: 'LED' },
-  presetApplied: { en: 'Preset applied: ', fr: 'Préréglage appliqué : ' },
-  effectStarted: { en: 'Effect started: ', fr: 'Effet lancé : ' },
+  brightness: { en: 'Brightness', fr: 'Luminosité', de: 'Helligkeit', es: 'Brillo' },
+  effect: { en: 'Effect', fr: 'Effet', de: 'Effekt', es: 'Efecto' },
+  palette: { en: 'Palette', fr: 'Palette', de: 'Palette', es: 'Paleta' },
+  preset: { en: 'Preset', fr: 'Préréglage', de: 'Preset', es: 'Preajuste' },
+  power: { en: 'Light', fr: 'Éclairage', de: 'Licht', es: 'Luz' },
+  on: { en: 'On', fr: 'Allumé', de: 'Ein', es: 'Encendida' },
+  off: { en: 'Off', fr: 'Éteint', de: 'Aus', es: 'Apagada' },
+  none: { en: 'None', fr: 'Aucun', de: 'Keines', es: 'Ninguno' },
+  unreachable: { en: 'unreachable', fr: 'injoignable', de: 'nicht erreichbar', es: 'inaccesible' },
+  live: { en: 'live data', fr: 'flux en direct', de: 'Live-Daten', es: 'datos en directo' },
+  leds: { en: 'LEDs', fr: 'LED', de: 'LEDs', es: 'LED' },
+  presetApplied: {
+    en: 'Preset applied: ',
+    fr: 'Préréglage appliqué : ',
+    de: 'Preset angewendet: ',
+    es: 'Preajuste aplicado: ',
+  },
+  effectStarted: {
+    en: 'Effect started: ',
+    fr: 'Effet lancé : ',
+    de: 'Effekt gestartet: ',
+    es: 'Efecto iniciado: ',
+  },
   updateGladys: {
     en: 'Update Gladys to pick an effect from the widget.',
     fr: 'Mettez Gladys à jour pour choisir un effet depuis le widget.',
+    de: 'Aktualisiere Gladys, um einen Effekt im Widget auszuwählen.',
+    es: 'Actualice Gladys para elegir un efecto desde el widget.',
   },
 };
 
 const t = (text, language) => text[language] ?? text.en;
-const prefixed = (text, suffix) => ({ en: `${text.en}${suffix}`, fr: `${text.fr}${suffix}` });
+const prefixed = (text, suffix) =>
+  Object.fromEntries(
+    Object.entries(text).map(([language, start]) => [language, `${start}${suffix}`]),
+  );
 
 /**
  * The presets offered as buttons: those with a quick-load label in WLED

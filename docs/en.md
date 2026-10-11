@@ -72,7 +72,9 @@ segment on also turns the controller on. Presets, nightlight and sync stay on
 the controller device.
 
 Feature names are given when you add a device, in the language chosen in
-**Configuration** → _Language of the feature names_.
+**Configuration** → _Language of the feature names_: English, French, German or
+Spanish. The integration's own texts (configuration, widget, scenes, messages)
+follow the language of your Gladys in these four languages.
 
 ## Real time
 

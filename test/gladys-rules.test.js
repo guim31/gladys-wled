@@ -2,7 +2,7 @@
 // Conformity with the Gladys core, on every device discovered from realistic
 // fixtures: RGB, RGBW, RGBW + CCT controllers, two segments, WLED 0.14.0 to
 // 16.0.1, a build without WebSocket — with and without one device per segment,
-// in both feature-name languages.
+// in every feature-name language.
 //
 // The table (test/fixtures/gladys-feature-table.json) is extracted from the
 // core code: a category/type couple missing there shows as "undefined" or
@@ -24,6 +24,8 @@ const scenarios = [
   { label: 'one device per controller', config: {} },
   { label: 'one device per segment', config: { segment_devices: 'all' } },
   { label: 'French names', config: { segment_devices: 'all', language: 'fr' } },
+  { label: 'German names', config: { segment_devices: 'all', language: 'de' } },
+  { label: 'Spanish names', config: { segment_devices: 'all', language: 'es' } },
 ];
 
 for (const scenario of scenarios) {

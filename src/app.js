@@ -13,6 +13,56 @@ import { WIDGETS } from './widgets.js';
 
 const logger = createLogger({ name: 'wled-app' });
 
+export const INIT_FAILED = {
+  en: 'Initialization failed, check the integration logs.',
+  fr: "L'initialisation a échoué, consultez les logs de l'intégration.",
+  de: 'Initialisierung fehlgeschlagen, sieh dir die Protokolle der Integration an.',
+  es: 'La inicialización ha fallado, consulte los registros de la integración.',
+};
+
+// The pieces of the "Search" report, one table per language.
+export const SEARCH_TEXT = {
+  en: {
+    none: 'No WLED controller found.',
+    count: (total, reachable) => `${total} controller(s), ${reachable} answering:`,
+    live: 'live',
+    polled: 'polled',
+    unreachable: 'unreachable',
+    noMdns: 'Automatic discovery (mDNS) through Gladys is unavailable: enter the IP addresses.',
+    ignored: (list) => `Ignored addresses: ${list}.`,
+  },
+  fr: {
+    none: 'Aucun contrôleur WLED trouvé.',
+    count: (total, reachable) => `${total} contrôleur(s), ${reachable} répondent :`,
+    live: 'en direct',
+    polled: 'interrogé',
+    unreachable: 'injoignable',
+    noMdns:
+      'La découverte automatique (mDNS) par Gladys est indisponible : saisissez les adresses IP.',
+    ignored: (list) => `Adresses ignorées : ${list}.`,
+  },
+  de: {
+    none: 'Kein WLED-Controller gefunden.',
+    count: (total, reachable) => `${total} Controller, davon ${reachable} erreichbar:`,
+    live: 'live',
+    polled: 'abgefragt',
+    unreachable: 'nicht erreichbar',
+    noMdns:
+      'Die automatische Erkennung (mDNS) über Gladys ist nicht verfügbar: Gib die IP-Adressen ein.',
+    ignored: (list) => `Ignorierte Adressen: ${list}.`,
+  },
+  es: {
+    none: 'No se ha encontrado ningún controlador WLED.',
+    count: (total, reachable) => `${total} controlador(es), ${reachable} responden:`,
+    live: 'en directo',
+    polled: 'consultado',
+    unreachable: 'inaccesible',
+    noMdns:
+      'El descubrimiento automático (mDNS) a través de Gladys no está disponible: introduzca las direcciones IP.',
+    ignored: (list) => `Direcciones ignoradas: ${list}.`,
+  },
+};
+
 /**
  * @param {object} gladys GladysIntegration instance
  * @param {object} [options] test seams: store, fetch, createSocket, timers, timings, socketTimings
@@ -55,12 +105,7 @@ export function registerHandlers(gladys, options = {}) {
       await hub.start(config);
     } catch (err) {
       logger.error('Initialization failed', err);
-      await gladys
-        .setConnectionStatus(false, {
-          en: 'Initialization failed, check the integration logs.',
-          fr: "L'initialisation a échoué, consultez les logs de l'intégration.",
-        })
-        .catch(() => {});
+      await gladys.setConnectionStatus(false, INIT_FAILED).catch(() => {});
     } finally {
       resolveReady();
     }
@@ -117,35 +162,31 @@ export function registerHandlers(gladys, options = {}) {
   };
 }
 
-/** The bilingual report shown under the "Search" button. */
+/** The report shown under the "Search" button, in every language. */
 export function searchMessage(summary) {
-  const { controllers, mdns, invalidHosts } = summary;
-  const en = [];
-  const fr = [];
+  return Object.fromEntries(
+    Object.entries(SEARCH_TEXT).map(([language, text]) => [language, searchReport(summary, text)]),
+  );
+}
+
+function searchReport({ controllers, mdns, invalidHosts }, text) {
+  const lines = [];
   if (controllers.length === 0) {
-    en.push('No WLED controller found.');
-    fr.push('Aucun contrôleur WLED trouvé.');
+    lines.push(text.none);
   } else {
     const reachable = controllers.filter((controller) => controller.reachable).length;
-    en.push(`${controllers.length} controller(s), ${reachable} answering:`);
-    fr.push(`${controllers.length} contrôleur(s), ${reachable} répondent :`);
-    const list = controllers.map(({ name, host, version, reachable: up, live }) => ({
-      en: `${name} (${host}, ${version}, ${up ? (live ? 'live' : 'polled') : 'unreachable'})`,
-      fr: `${name} (${host}, ${version}, ${up ? (live ? 'en direct' : 'interrogé') : 'injoignable'})`,
-    }));
-    en.push(`${list.map((entry) => entry.en).join(', ')}.`);
-    fr.push(`${list.map((entry) => entry.fr).join(', ')}.`);
+    lines.push(text.count(controllers.length, reachable));
+    const list = controllers.map(
+      ({ name, host, version, reachable: up, live }) =>
+        `${name} (${host}, ${version}, ${up ? (live ? text.live : text.polled) : text.unreachable})`,
+    );
+    lines.push(`${list.join(', ')}.`);
   }
   if (mdns === 'unavailable') {
-    en.push('Automatic discovery (mDNS) through Gladys is unavailable: enter the IP addresses.');
-    fr.push(
-      'La découverte automatique (mDNS) par Gladys est indisponible : saisissez les adresses IP.',
-    );
+    lines.push(text.noMdns);
   }
   if (invalidHosts.length > 0) {
-    const list = invalidHosts.slice(0, 3).join(', ');
-    en.push(`Ignored addresses: ${list}.`);
-    fr.push(`Adresses ignorées : ${list}.`);
+    lines.push(text.ignored(invalidHosts.slice(0, 3).join(', ')));
   }
-  return { en: en.join(' '), fr: fr.join(' ') };
+  return lines.join(' ');
 }

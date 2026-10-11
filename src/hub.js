@@ -38,6 +38,22 @@ import {
 } from './wled/model.js';
 import { LiveSocket } from './wled/socket.js';
 
+// Shown by Gladys under the integration name when it is not connected.
+export const CONNECTION_TEXT = {
+  noController: {
+    en: 'No WLED controller found. Check that it is on the same network, or enter its IP address.',
+    fr: "Aucun contrôleur WLED trouvé. Vérifiez qu'il est sur le même réseau, ou saisissez son adresse IP.",
+    de: 'Kein WLED-Controller gefunden. Prüfe, ob er im selben Netzwerk ist, oder gib seine IP-Adresse ein.',
+    es: 'No se ha encontrado ningún controlador WLED. Compruebe que está en la misma red o introduzca su dirección IP.',
+  },
+  noAnswer: {
+    en: 'No WLED controller answers.',
+    fr: 'Aucun contrôleur WLED ne répond.',
+    de: 'Kein WLED-Controller antwortet.',
+    es: 'Ningún controlador WLED responde.',
+  },
+};
+
 const logger = createLogger({ name: 'wled-hub' });
 
 export const WIDGET_KEY = 'wled';
@@ -540,17 +556,11 @@ export class WledHub {
   async publishConnectionStatus() {
     const controllers = [...this.controllers.values()];
     if (controllers.length === 0) {
-      await this.gladys.setConnectionStatus(false, {
-        en: 'No WLED controller found. Check that it is on the same network, or enter its IP address.',
-        fr: "Aucun contrôleur WLED trouvé. Vérifiez qu'il est sur le même réseau, ou saisissez son adresse IP.",
-      });
+      await this.gladys.setConnectionStatus(false, CONNECTION_TEXT.noController);
       return;
     }
     if (!controllers.some((controller) => controller.reachable)) {
-      await this.gladys.setConnectionStatus(false, {
-        en: 'No WLED controller answers.',
-        fr: 'Aucun contrôleur WLED ne répond.',
-      });
+      await this.gladys.setConnectionStatus(false, CONNECTION_TEXT.noAnswer);
       return;
     }
     await this.gladys.setConnectionStatus(true);

@@ -4,7 +4,9 @@
   "name": "WLED",
   "description": {
     "en": "WLED LED strip controllers on the local network: colors, effects, palettes, presets, segments.",
-    "fr": "Contrôleurs de rubans LED WLED en réseau local : couleurs, effets, palettes, préréglages, segments."
+    "fr": "Contrôleurs de rubans LED WLED en réseau local : couleurs, effets, palettes, préréglages, segments.",
+    "de": "WLED-Controller für LED-Streifen im lokalen Netzwerk: Farben, Effekte, Paletten, Presets, Segmente.",
+    "es": "Controladores WLED de tiras LED en la red local: colores, efectos, paletas, preajustes, segmentos."
   },
   "version": "1.0.2",
   "docker_image": "ghcr.io/guim31/gladys-wled:1.0.2",
@@ -17,29 +19,50 @@
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Finding your controllers", "fr": "Trouver vos contrôleurs" },
+      "label": {
+        "en": "Finding your controllers",
+        "fr": "Trouver vos contrôleurs",
+        "de": "Deine Controller finden",
+        "es": "Encontrar sus controladores"
+      },
       "description": {
         "en": "WLED controllers on the same network as Gladys are found automatically (mDNS): open the Discovery tab. If one is missing, enter its IP address below (shown in the WLED app, under Config, WiFi Setup).",
-        "fr": "Les contrôleurs WLED du même réseau que Gladys sont trouvés automatiquement (mDNS) : ouvrez l'onglet Découverte. S'il en manque un, saisissez son adresse IP ci-dessous (affichée dans l'application WLED, Config, WiFi Setup)."
+        "fr": "Les contrôleurs WLED du même réseau que Gladys sont trouvés automatiquement (mDNS) : ouvrez l'onglet Découverte. S'il en manque un, saisissez son adresse IP ci-dessous (affichée dans l'application WLED, Config, WiFi Setup).",
+        "de": "WLED-Controller im selben Netzwerk wie Gladys werden automatisch gefunden (mDNS): Öffne den Tab „Entdecken“. Fehlt einer, gib unten seine IP-Adresse ein (in der WLED-App unter Config, WiFi Setup angezeigt).",
+        "es": "Los controladores WLED de la misma red que Gladys se encuentran automáticamente (mDNS): abra la pestaña Descubrir. Si falta alguno, introduzca su dirección IP a continuación (se muestra en la aplicación WLED, en Config, WiFi Setup)."
       },
       "links": [
         {
           "url": "https://github.com/guim31/gladys-wled/blob/main/docs/en.md",
-          "label": { "en": "Setup guide", "fr": "Guide d'installation" }
+          "label": {
+            "en": "Setup guide",
+            "fr": "Guide d'installation",
+            "de": "Installationsanleitung",
+            "es": "Guía de instalación"
+          }
         }
       ]
     },
     {
       "key": "hosts",
       "type": "string",
-      "label": { "en": "Controller IP addresses", "fr": "Adresses IP des contrôleurs" },
+      "label": {
+        "en": "Controller IP addresses",
+        "fr": "Adresses IP des contrôleurs",
+        "de": "IP-Adressen der Controller",
+        "es": "Direcciones IP de los controladores"
+      },
       "description": {
         "en": "Optional, separated by commas. Only needed for the controllers automatic discovery does not find.",
-        "fr": "Facultatif, séparées par des virgules. Seulement pour les contrôleurs que la découverte automatique ne trouve pas."
+        "fr": "Facultatif, séparées par des virgules. Seulement pour les contrôleurs que la découverte automatique ne trouve pas.",
+        "de": "Optional, durch Kommas getrennt. Nur für Controller nötig, die die automatische Erkennung nicht findet.",
+        "es": "Opcional, separadas por comas. Solo para los controladores que el descubrimiento automático no encuentra."
       },
       "placeholder": {
         "en": "e.g. 192.168.1.50, 192.168.1.51",
-        "fr": "ex. 192.168.1.50, 192.168.1.51"
+        "fr": "ex. 192.168.1.50, 192.168.1.51",
+        "de": "z. B. 192.168.1.50, 192.168.1.51",
+        "es": "p. ej. 192.168.1.50, 192.168.1.51"
       },
       "required": false,
       "default": ""
@@ -47,23 +70,37 @@
     {
       "key": "segment_devices",
       "type": "select",
-      "label": { "en": "Segments", "fr": "Segments" },
+      "label": {
+        "en": "Segments",
+        "fr": "Segments",
+        "de": "Segmente",
+        "es": "Segmentos"
+      },
       "description": {
         "en": "Each controller is one device, driving the segments selected in WLED (the whole strip when there is only one). You can also get one device per segment.",
-        "fr": "Chaque contrôleur est un appareil, qui pilote les segments sélectionnés dans WLED (tout le ruban s'il n'y en a qu'un). Vous pouvez aussi obtenir un appareil par segment."
+        "fr": "Chaque contrôleur est un appareil, qui pilote les segments sélectionnés dans WLED (tout le ruban s'il n'y en a qu'un). Vous pouvez aussi obtenir un appareil par segment.",
+        "de": "Jeder Controller ist ein Gerät, das die in WLED ausgewählten Segmente steuert (den ganzen Streifen, wenn es nur eines gibt). Du kannst auch ein Gerät pro Segment erhalten.",
+        "es": "Cada controlador es un dispositivo que controla los segmentos seleccionados en WLED (toda la tira si solo hay uno). También puede obtener un dispositivo por segmento."
       },
       "required": false,
       "default": "none",
       "options": [
         {
           "value": "none",
-          "label": { "en": "One device per controller", "fr": "Un appareil par contrôleur" }
+          "label": {
+            "en": "One device per controller",
+            "fr": "Un appareil par contrôleur",
+            "de": "Ein Gerät pro Controller",
+            "es": "Un dispositivo por controlador"
+          }
         },
         {
           "value": "all",
           "label": {
             "en": "Also one device per segment",
-            "fr": "Aussi un appareil par segment"
+            "fr": "Aussi un appareil par segment",
+            "de": "Zusätzlich ein Gerät pro Segment",
+            "es": "Además, un dispositivo por segmento"
           }
         }
       ]
@@ -73,27 +110,72 @@
       "type": "select",
       "label": {
         "en": "Language of the feature names",
-        "fr": "Langue des noms de fonctionnalités"
+        "fr": "Langue des noms de fonctionnalités",
+        "de": "Sprache der Funktionsnamen",
+        "es": "Idioma de los nombres de las funciones"
       },
       "description": {
         "en": "Names given to the features of new devices (Light, Brightness, Effect...).",
-        "fr": "Noms donnés aux fonctionnalités des nouveaux appareils (Éclairage, Luminosité, Effet…)."
+        "fr": "Noms donnés aux fonctionnalités des nouveaux appareils (Éclairage, Luminosité, Effet…).",
+        "de": "Namen, die den Funktionen neuer Geräte gegeben werden (Licht, Helligkeit, Effekt…).",
+        "es": "Nombres dados a las funciones de los nuevos dispositivos (Luz, Brillo, Efecto…)."
       },
       "required": false,
       "default": "en",
       "options": [
-        { "value": "en", "label": { "en": "English", "fr": "Anglais" } },
-        { "value": "fr", "label": { "en": "French", "fr": "Français" } }
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
       ]
     }
   ],
   "actions": [
     {
       "key": "search",
-      "label": { "en": "Search for controllers", "fr": "Rechercher les contrôleurs" },
+      "label": {
+        "en": "Search for controllers",
+        "fr": "Rechercher les contrôleurs",
+        "de": "Controller suchen",
+        "es": "Buscar controladores"
+      },
       "description": {
         "en": "Looks for WLED controllers again and reports the ones found.",
-        "fr": "Recherche à nouveau les contrôleurs WLED et liste ceux trouvés."
+        "fr": "Recherche à nouveau les contrôleurs WLED et liste ceux trouvés.",
+        "de": "Sucht erneut nach WLED-Controllern und listet die gefundenen auf.",
+        "es": "Busca de nuevo los controladores WLED e indica los encontrados."
       },
       "timeout_seconds": 30
     }
@@ -101,25 +183,44 @@
   "scene_triggers": [
     {
       "key": "preset_activated",
-      "label": { "en": "WLED preset activated", "fr": "Préréglage WLED activé" },
+      "label": {
+        "en": "WLED preset activated",
+        "fr": "Préréglage WLED activé",
+        "de": "WLED-Preset aktiviert",
+        "es": "Preajuste WLED activado"
+      },
       "description": {
         "en": "A preset or playlist was started outside Gladys: from the WLED app, a button, a schedule or a remote.",
-        "fr": "Un préréglage ou une playlist a été lancé hors de Gladys : depuis l'application WLED, un bouton, une planification ou une télécommande."
+        "fr": "Un préréglage ou une playlist a été lancé hors de Gladys : depuis l'application WLED, un bouton, une planification ou une télécommande.",
+        "de": "Ein Preset oder eine Playlist wurde außerhalb von Gladys gestartet: über die WLED-App, einen Taster, einen Zeitplan oder eine Fernbedienung.",
+        "es": "Se ha iniciado un preajuste o una lista de reproducción fuera de Gladys: desde la aplicación WLED, un botón, una programación o un mando a distancia."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Controller", "fr": "Contrôleur" }
+          "label": {
+            "en": "Controller",
+            "fr": "Contrôleur",
+            "de": "Controller",
+            "es": "Controlador"
+          }
         },
         {
           "key": "preset",
           "type": "string",
-          "label": { "en": "Preset name", "fr": "Nom du préréglage" },
+          "label": {
+            "en": "Preset name",
+            "fr": "Nom du préréglage",
+            "de": "Preset-Name",
+            "es": "Nombre del preajuste"
+          },
           "description": {
             "en": "Leave empty for any preset.",
-            "fr": "Laisser vide pour n'importe quel préréglage."
+            "fr": "Laisser vide pour n'importe quel préréglage.",
+            "de": "Leer lassen für ein beliebiges Preset.",
+            "es": "Déjelo vacío para cualquier preajuste."
           }
         }
       ],
@@ -127,12 +228,22 @@
         {
           "key": "preset",
           "type": "string",
-          "label": { "en": "Preset name", "fr": "Nom du préréglage" }
+          "label": {
+            "en": "Preset name",
+            "fr": "Nom du préréglage",
+            "de": "Preset-Name",
+            "es": "Nombre del preajuste"
+          }
         },
         {
           "key": "preset_id",
           "type": "number",
-          "label": { "en": "Preset number", "fr": "Numéro du préréglage" }
+          "label": {
+            "en": "Preset number",
+            "fr": "Numéro du préréglage",
+            "de": "Preset-Nummer",
+            "es": "Número del preajuste"
+          }
         }
       ]
     }
@@ -140,10 +251,17 @@
   "scene_actions": [
     {
       "key": "apply_preset",
-      "label": { "en": "Apply a WLED preset", "fr": "Appliquer un préréglage WLED" },
+      "label": {
+        "en": "Apply a WLED preset",
+        "fr": "Appliquer un préréglage WLED",
+        "de": "WLED-Preset anwenden",
+        "es": "Aplicar un preajuste WLED"
+      },
       "description": {
         "en": "Applies a preset or starts a playlist saved on the controller, given by its name or number.",
-        "fr": "Applique un préréglage ou lance une playlist enregistrés sur le contrôleur, désignés par leur nom ou leur numéro."
+        "fr": "Applique un préréglage ou lance une playlist enregistrés sur le contrôleur, désignés par leur nom ou leur numéro.",
+        "de": "Wendet ein auf dem Controller gespeichertes Preset an oder startet eine Playlist, angegeben über Name oder Nummer.",
+        "es": "Aplica un preajuste o inicia una lista de reproducción guardados en el controlador, indicados por su nombre o número."
       },
       "timeout_seconds": 15,
       "fields": [
@@ -151,14 +269,29 @@
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Controller", "fr": "Contrôleur" },
+          "label": {
+            "en": "Controller",
+            "fr": "Contrôleur",
+            "de": "Controller",
+            "es": "Controlador"
+          },
           "required": true
         },
         {
           "key": "preset",
           "type": "string",
-          "label": { "en": "Preset name or number", "fr": "Nom ou numéro du préréglage" },
-          "placeholder": { "en": "e.g. Evening", "fr": "ex. Soirée" },
+          "label": {
+            "en": "Preset name or number",
+            "fr": "Nom ou numéro du préréglage",
+            "de": "Name oder Nummer des Presets",
+            "es": "Nombre o número del preajuste"
+          },
+          "placeholder": {
+            "en": "e.g. Evening",
+            "fr": "ex. Soirée",
+            "de": "z. B. Abend",
+            "es": "p. ej. Noche"
+          },
           "required": true
         }
       ],
@@ -166,21 +299,38 @@
         {
           "key": "preset_id",
           "type": "number",
-          "label": { "en": "Preset number", "fr": "Numéro du préréglage" }
+          "label": {
+            "en": "Preset number",
+            "fr": "Numéro du préréglage",
+            "de": "Preset-Nummer",
+            "es": "Número del preajuste"
+          }
         },
         {
           "key": "preset_name",
           "type": "string",
-          "label": { "en": "Preset name", "fr": "Nom du préréglage" }
+          "label": {
+            "en": "Preset name",
+            "fr": "Nom du préréglage",
+            "de": "Preset-Name",
+            "es": "Nombre del preajuste"
+          }
         }
       ]
     },
     {
       "key": "start_effect",
-      "label": { "en": "Start a WLED effect", "fr": "Lancer un effet WLED" },
+      "label": {
+        "en": "Start a WLED effect",
+        "fr": "Lancer un effet WLED",
+        "de": "WLED-Effekt starten",
+        "es": "Iniciar un efecto WLED"
+      },
       "description": {
         "en": "Turns the light on and starts an effect, given by its name or number, with an optional palette, speed and intensity.",
-        "fr": "Allume la lumière et lance un effet, désigné par son nom ou son numéro, avec palette, vitesse et intensité facultatives."
+        "fr": "Allume la lumière et lance un effet, désigné par son nom ou son numéro, avec palette, vitesse et intensité facultatives.",
+        "de": "Schaltet das Licht ein und startet einen Effekt, angegeben über Name oder Nummer, optional mit Palette, Geschwindigkeit und Intensität.",
+        "es": "Enciende la luz e inicia un efecto, indicado por su nombre o número, con paleta, velocidad e intensidad opcionales."
       },
       "timeout_seconds": 15,
       "fields": [
@@ -188,27 +338,57 @@
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Controller or segment", "fr": "Contrôleur ou segment" },
+          "label": {
+            "en": "Controller or segment",
+            "fr": "Contrôleur ou segment",
+            "de": "Controller oder Segment",
+            "es": "Controlador o segmento"
+          },
           "required": true
         },
         {
           "key": "effect",
           "type": "string",
-          "label": { "en": "Effect name or number", "fr": "Nom ou numéro de l'effet" },
-          "placeholder": { "en": "e.g. Rainbow", "fr": "ex. Rainbow" },
+          "label": {
+            "en": "Effect name or number",
+            "fr": "Nom ou numéro de l'effet",
+            "de": "Name oder Nummer des Effekts",
+            "es": "Nombre o número del efecto"
+          },
+          "placeholder": {
+            "en": "e.g. Rainbow",
+            "fr": "ex. Rainbow",
+            "de": "z. B. Rainbow",
+            "es": "p. ej. Rainbow"
+          },
           "required": true
         },
         {
           "key": "palette",
           "type": "string",
-          "label": { "en": "Palette (optional)", "fr": "Palette (facultative)" },
-          "placeholder": { "en": "e.g. Party", "fr": "ex. Party" },
+          "label": {
+            "en": "Palette (optional)",
+            "fr": "Palette (facultative)",
+            "de": "Palette (optional)",
+            "es": "Paleta (opcional)"
+          },
+          "placeholder": {
+            "en": "e.g. Party",
+            "fr": "ex. Party",
+            "de": "z. B. Party",
+            "es": "p. ej. Party"
+          },
           "required": false
         },
         {
           "key": "speed",
           "type": "number",
-          "label": { "en": "Speed (0-100, optional)", "fr": "Vitesse (0-100, facultative)" },
+          "label": {
+            "en": "Speed (0-100, optional)",
+            "fr": "Vitesse (0-100, facultative)",
+            "de": "Geschwindigkeit (0-100, optional)",
+            "es": "Velocidad (0-100, opcional)"
+          },
           "required": false,
           "min": 0,
           "max": 100
@@ -216,7 +396,12 @@
         {
           "key": "intensity",
           "type": "number",
-          "label": { "en": "Intensity (0-100, optional)", "fr": "Intensité (0-100, facultative)" },
+          "label": {
+            "en": "Intensity (0-100, optional)",
+            "fr": "Intensité (0-100, facultative)",
+            "de": "Intensität (0-100, optional)",
+            "es": "Intensidad (0-100, opcional)"
+          },
           "required": false,
           "min": 0,
           "max": 100
@@ -226,12 +411,22 @@
         {
           "key": "effect_id",
           "type": "number",
-          "label": { "en": "Effect number", "fr": "Numéro de l'effet" }
+          "label": {
+            "en": "Effect number",
+            "fr": "Numéro de l'effet",
+            "de": "Effektnummer",
+            "es": "Número del efecto"
+          }
         },
         {
           "key": "effect_name",
           "type": "string",
-          "label": { "en": "Effect name", "fr": "Nom de l'effet" }
+          "label": {
+            "en": "Effect name",
+            "fr": "Nom de l'effet",
+            "de": "Effektname",
+            "es": "Nombre del efecto"
+          }
         }
       ]
     }
@@ -239,10 +434,17 @@
   "widgets": [
     {
       "key": "wled",
-      "label": { "en": "WLED", "fr": "WLED" },
+      "label": {
+        "en": "WLED",
+        "fr": "WLED",
+        "de": "WLED",
+        "es": "WLED"
+      },
       "description": {
         "en": "Favorite presets and chosen effects in one tap, with the current effect, palette and preset.",
-        "fr": "Préréglages favoris et effets choisis en un geste, avec effet, palette et préréglage en cours."
+        "fr": "Préréglages favoris et effets choisis en un geste, avec effet, palette et préréglage en cours.",
+        "de": "Lieblings-Presets und Effekte per Tippen, dazu aktueller Effekt, Palette und Preset.",
+        "es": "Preajustes favoritos y efectos con un toque, con el efecto, la paleta y el preajuste actuales."
       },
       "icon": "sun",
       "action_timeout_seconds": 15,
@@ -251,32 +453,140 @@
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "WLED device", "fr": "Appareil WLED" },
+          "label": {
+            "en": "WLED device",
+            "fr": "Appareil WLED",
+            "de": "WLED-Gerät",
+            "es": "Dispositivo WLED"
+          },
           "required": true
         },
         {
           "key": "effects",
           "type": "multi_select",
-          "label": { "en": "Effect buttons", "fr": "Boutons d'effets" },
+          "label": {
+            "en": "Effect buttons",
+            "fr": "Boutons d'effets",
+            "de": "Effekt-Schaltflächen",
+            "es": "Botones de efectos"
+          },
           "description": {
             "en": "Effects shown as one-tap buttons, when the controller has them (four buttons at most with the favorite presets).",
-            "fr": "Effets affichés en boutons, quand le contrôleur les a (quatre boutons au plus avec les préréglages favoris)."
+            "fr": "Effets affichés en boutons, quand le contrôleur les a (quatre boutons au plus avec les préréglages favoris).",
+            "de": "Effekte als Schaltflächen zum Antippen, sofern der Controller sie hat (höchstens vier Schaltflächen zusammen mit den Lieblings-Presets).",
+            "es": "Efectos mostrados como botones de un toque, si el controlador los tiene (cuatro botones como máximo con los preajustes favoritos)."
           },
           "required": false,
           "default": ["Solid", "Rainbow"],
           "options": [
-            { "value": "Solid", "label": { "en": "Solid", "fr": "Solid" } },
-            { "value": "Rainbow", "label": { "en": "Rainbow", "fr": "Rainbow" } },
-            { "value": "Colorloop", "label": { "en": "Colorloop", "fr": "Colorloop" } },
-            { "value": "Breathe", "label": { "en": "Breathe", "fr": "Breathe" } },
-            { "value": "Candle", "label": { "en": "Candle", "fr": "Candle" } },
-            { "value": "Fire 2012", "label": { "en": "Fire 2012", "fr": "Fire 2012" } },
-            { "value": "Twinkle", "label": { "en": "Twinkle", "fr": "Twinkle" } },
-            { "value": "Aurora", "label": { "en": "Aurora", "fr": "Aurora" } },
-            { "value": "Fireworks", "label": { "en": "Fireworks", "fr": "Fireworks" } },
-            { "value": "Meteor", "label": { "en": "Meteor", "fr": "Meteor" } },
-            { "value": "Pacifica", "label": { "en": "Pacifica", "fr": "Pacifica" } },
-            { "value": "Lake", "label": { "en": "Lake", "fr": "Lake" } }
+            {
+              "value": "Solid",
+              "label": {
+                "en": "Solid",
+                "fr": "Solid",
+                "de": "Solid",
+                "es": "Solid"
+              }
+            },
+            {
+              "value": "Rainbow",
+              "label": {
+                "en": "Rainbow",
+                "fr": "Rainbow",
+                "de": "Rainbow",
+                "es": "Rainbow"
+              }
+            },
+            {
+              "value": "Colorloop",
+              "label": {
+                "en": "Colorloop",
+                "fr": "Colorloop",
+                "de": "Colorloop",
+                "es": "Colorloop"
+              }
+            },
+            {
+              "value": "Breathe",
+              "label": {
+                "en": "Breathe",
+                "fr": "Breathe",
+                "de": "Breathe",
+                "es": "Breathe"
+              }
+            },
+            {
+              "value": "Candle",
+              "label": {
+                "en": "Candle",
+                "fr": "Candle",
+                "de": "Candle",
+                "es": "Candle"
+              }
+            },
+            {
+              "value": "Fire 2012",
+              "label": {
+                "en": "Fire 2012",
+                "fr": "Fire 2012",
+                "de": "Fire 2012",
+                "es": "Fire 2012"
+              }
+            },
+            {
+              "value": "Twinkle",
+              "label": {
+                "en": "Twinkle",
+                "fr": "Twinkle",
+                "de": "Twinkle",
+                "es": "Twinkle"
+              }
+            },
+            {
+              "value": "Aurora",
+              "label": {
+                "en": "Aurora",
+                "fr": "Aurora",
+                "de": "Aurora",
+                "es": "Aurora"
+              }
+            },
+            {
+              "value": "Fireworks",
+              "label": {
+                "en": "Fireworks",
+                "fr": "Fireworks",
+                "de": "Fireworks",
+                "es": "Fireworks"
+              }
+            },
+            {
+              "value": "Meteor",
+              "label": {
+                "en": "Meteor",
+                "fr": "Meteor",
+                "de": "Meteor",
+                "es": "Meteor"
+              }
+            },
+            {
+              "value": "Pacifica",
+              "label": {
+                "en": "Pacifica",
+                "fr": "Pacifica",
+                "de": "Pacifica",
+                "es": "Pacifica"
+              }
+            },
+            {
+              "value": "Lake",
+              "label": {
+                "en": "Lake",
+                "fr": "Lake",
+                "de": "Lake",
+                "es": "Lake"
+              }
+            }
           ]
         }
       ]
