@@ -9,29 +9,10 @@
 // controller whatever address it answers on.
 // -----------------------------------------------------------------------------
 
+import { parseMdnsTxt } from '@gladysassistant/integration-sdk';
+
 export const MDNS_SERVICE = '_wled._tcp';
 export const MDNS_TIMEOUT_SECONDS = 5;
-
-/**
- * DNS-SD TXT entries to an object (RFC 6763): keys lower-cased, the value is
- * what follows the first `=`, an entry without `=` is `true`, the first
- * occurrence of a key wins. (The published SDK 0.14.0 has no parseMdnsTxt.)
- * @param {unknown} txt
- */
-export function parseTxt(txt) {
-  const record = {};
-  for (const entry of Array.isArray(txt) ? txt : []) {
-    if (typeof entry !== 'string' || entry === '' || entry.startsWith('=')) {
-      continue;
-    }
-    const at = entry.indexOf('=');
-    const key = (at === -1 ? entry : entry.slice(0, at)).toLowerCase();
-    if (!(key in record)) {
-      record[key] = at === -1 ? true : entry.slice(at + 1);
-    }
-  }
-  return record;
-}
 
 const IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/;
 
@@ -53,7 +34,7 @@ export function mdnsCandidates(results) {
       continue;
     }
     const port = Number.isInteger(result.port) && result.port !== 80 ? `:${result.port}` : '';
-    const txt = parseTxt(result.txt);
+    const txt = parseMdnsTxt(result.txt);
     const mac = typeof txt.mac === 'string' ? txt.mac.toLowerCase().replace(/[^0-9a-f]/g, '') : '';
     const host = `${ipv4}${port}`;
     if (!candidates.some((candidate) => candidate.host === host)) {

@@ -35,7 +35,8 @@ index.js                          SDK wiring only: src/app.js registers the hand
 src/app.js                        every SDK handler -> the hub (also used by the tests)
 src/hub.js                        discovery, live links, states, commands, preset trigger
 src/devices.js                    WLED controller -> Gladys devices, state values, commands
-src/discovery.js                  mDNS results (scanNetwork), address probing
+src/discovery.js                  mDNS results (scanNetwork, SDK parseMdnsTxt), address probing
+src/issues.js                     deduplicated problem logs (one line when it starts, one when it ends)
 src/wled/client.js                HTTP client of the WLED JSON API (one request at a time)
 src/wled/socket.js                WebSocket /ws link: reconnection, keepalive
 src/wled/model.js                 reading /json/info, /json/state, lists; conversions
@@ -44,9 +45,11 @@ src/widgets.js                    dashboard widget handlers (manifest `widgets`)
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
 src/store.js                      /data/wled-state.json (known controllers)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
+docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory; no de/es yet)
 test/                             node --test; helpers/fakeGladys.js stands in for the SDK,
-                                  helpers/fakeWled.js simulates controllers from test/fixtures/wled
+                                  helpers/fakeWled.js simulates controllers from test/fixtures/wled,
+                                  live.test.js runs on the SDK's createFakeGladys (following
+                                  created devices with no Gladys poll, quiet info logs)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -76,8 +79,16 @@ test/                             node --test; helpers/fakeGladys.js stands in f
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** comes in four languages (`en`, `fr`, `de`, `es`):
+  action messages, manifest texts, widget and connection texts
+  (`test/i18n.test.js` checks them). The documentation exists in English and
+  French only (`docs/en.md` / `docs/fr.md`, kept in sync).
+- **Logs.** The info level tells what changes (a controller found, lost or
+  back, Gladys refusing updates then accepting them again), never a push, a
+  poll or a state. A failure that repeats goes through `IssueLog`
+  (`src/issues.js`): one line when it starts, one when it ends, debug in
+  between. `test/live.test.js` fails if a normal cycle writes at the info
+  level.
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -123,6 +134,12 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
   15000, 30000, 60000). Le template publie `poll_frequency: 300` sans `should_poll` : c'est faux,
   le cœur répond 400 à la découverte. Pour une cadence hors liste, publier `should_poll: false` et
   pousser les états depuis le conteneur, en gardant un `onPoll` de repli.
+- **Polling, cœur 5.2.0** (GladysAssistant/Gladys#3198, correctif #3199 non publié) : un appareil
+  **déjà créé** sans `should_poll: true` et `poll_frequency` valide n'est **jamais** sondé, même
+  après correction (les deux champs sont lus à la création). Toute intégration qui compte sur
+  `onPoll` doit sonder elle-même par un minuteur. Ici, rien à faire : le hub suit chaque contrôleur
+  connu dès le démarrage (WebSocket, sinon interrogation HTTP toutes les 30 s), `onPoll` n'est
+  qu'un repli ; `test/live.test.js` le prouve sur le vrai client du SDK.
 - **`min` et `max` sont NOT NULL** dans `t_device_feature`, y compris pour `text/text` : sans eux,
   « Ajouter à Gladys » échoue en HTTP 422. Mettre 0/0, comme Zigbee2MQTT.
 - Un état publié sur une fonctionnalité **pas encore ajoutée** dans Gladys reçoit un 200 puis est
@@ -198,8 +215,8 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
   widget, chaque option de `select` a un **libellé
   multi-langue** (`{ en: … }`), comme dans le manifeste : le cœur valide avec
   `validateConfigField` et jette le bouton sinon. `validateWidgetContent` ne le voit pas.
-- Node 22+ fournit `WebSocket` en global : pas besoin de la dépendance `ws`. Le SDK 0.14.0 publié a
-  `scanNetwork` mais pas `parseMdnsTxt` (le réécrire, quelques lignes).
+- Node 22+ fournit `WebSocket` en global : pas besoin de la dépendance `ws`. `parseMdnsTxt` vient
+  du SDK depuis 0.15.0.
 - Un nom mDNS (`xxx.local`) ne se résout pas dans le conteneur : demander des adresses IP en
   secours de la découverte médiée.
 - Dans les tests, `AbortSignal.timeout` ne retient pas la boucle d'événements : un test qui attend

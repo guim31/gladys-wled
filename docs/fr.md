@@ -151,8 +151,9 @@ un appareil de segment) dans ses réglages. Il affiche :
   les changements faits hors de Gladys mettent jusqu'à 30 secondes à
   apparaître. WLED accepte aussi un nombre limité de clients WebSocket
   simultanés : fermez les onglets de l'application WLED inutilisés.
-- L'intégration journalise tout ce qu'elle fait : ouvrez les journaux de
-  l'intégration depuis l'interface de Gladys, avec `LOG_LEVEL=debug` pour le
-  détail complet.
+- Les journaux de l'intégration restent courts : un contrôleur trouvé, perdu
+  ou revenu, et chaque problème une fois quand il commence et une fois quand il
+  se termine. Ouvrez-les depuis l'interface de Gladys ; `LOG_LEVEL=debug` y
+  ajoute chaque mise à jour, interrogation et tentative de reconnexion.
 
 Cette intégration n'est pas affiliée au projet WLED.

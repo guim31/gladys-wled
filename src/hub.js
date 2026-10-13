@@ -5,7 +5,14 @@
 // Real time: every controller pushes its state over its WebSocket on each
 // change. While the WebSocket is down (or on a build without one), the hub
 // polls the controller every 30 s and keeps trying to reconnect. Gladys never
-// polls these devices (should_poll: false): its scheduler cannot follow a push.
+// polls these devices (should_poll: false): its scheduler cannot follow a push,
+// and the devices created before would never be polled anyway. The hub follows
+// every known controller by itself, from the start, whatever Gladys does.
+//
+// Logs: the info level only tells what changes (a controller found, lost or
+// back, Gladys refusing updates then accepting them again). Pushes, polls and
+// reconnection attempts are debug lines; a failure that repeats is logged once
+// when it starts and once when it is over (src/issues.js).
 // -----------------------------------------------------------------------------
 
 import { createLogger } from '@gladysassistant/integration-sdk';
@@ -24,6 +31,7 @@ import {
   segmentValues,
 } from './devices.js';
 import { MDNS_TIMEOUT_SECONDS, mapLimit, mdnsCandidates } from './discovery.js';
+import { IssueLog } from './issues.js';
 import { WledClient } from './wled/client.js';
 import {
   activePresetId,
@@ -111,6 +119,7 @@ export class WledHub {
     this.rediscoveryTimer = null;
     this.lastScan = { mdns: 'not-run', found: 0, at: null };
     this.stopped = false;
+    this.issues = new IssueLog(logger);
   }
 
   // --- Lifecycle -------------------------------------------------------------
@@ -175,7 +184,16 @@ export class WledHub {
   /** Keep track of background work, so the tests (and stop) can wait for it. */
   track(promise) {
     const tracked = Promise.resolve(promise)
-      .catch((err) => logger.error('Background task failed', err))
+      .catch((err) => {
+        // Gladys API failures are already logged (once) by toGladys.
+        if (!err?.logged) {
+          this.issues.fail(
+            `task:${err?.message}`,
+            `Background task failed: ${err?.message}`,
+            'error',
+          );
+        }
+      })
       .finally(() => this.pending.delete(tracked));
     this.pending.add(tracked);
     return tracked;
@@ -278,7 +296,7 @@ export class WledHub {
       try {
         await this.adopt(answer);
       } catch (err) {
-        logger.warn(`Cannot read ${answer.host}: ${err.message}`);
+        this.listsFailed(answer.mac, answer.host, err);
       }
     }
     for (const controller of this.controllers.values()) {
@@ -302,11 +320,12 @@ export class WledHub {
         timeoutSeconds: MDNS_TIMEOUT_SECONDS,
       });
       const candidates = mdnsCandidates(results);
+      this.issues.recover('mdns', 'mDNS scan through Gladys works again');
       this.lastScan = { ...this.lastScan, mdns: 'ok', mdnsCount: candidates.length };
       return candidates;
     } catch (err) {
       // 403: an older core, or the capture refused. Typed addresses still work.
-      logger.warn(`mDNS scan through Gladys failed: ${err.message}`);
+      this.issues.fail('mdns', `mDNS scan through Gladys failed: ${err.message}`);
       this.lastScan = { ...this.lastScan, mdns: 'unavailable', mdnsError: err.message };
       return [];
     }
@@ -366,8 +385,6 @@ export class WledHub {
   async applyInfo(controller, rawInfo, { force = false } = {}) {
     const info = parseInfo(rawInfo);
     const previous = controller.info;
-    controller.rawInfo = rawInfo;
-    controller.info = info;
     // A restart may come with a firmware update, and resets `pmt`.
     const rebooted =
       previous?.uptime !== null &&
@@ -378,14 +395,23 @@ export class WledHub {
     // `pmt` (presets modification time) is missing on old builds: their
     // presets are only read again on a scan or a restart.
     const presetsChanged = force || rebooted || previous?.presetsVersion !== info.presetsVersion;
+    // The new info is only kept once its lists are read: a failed read is
+    // tried again with the next document, instead of leaving stale lists.
+    const lists = {};
     if (catalogChanged) {
-      controller.effects = parseEffects(await controller.client.getEffects());
-      controller.palettes = parsePalettes(await controller.client.getPalettes());
+      lists.effects = parseEffects(await controller.client.getEffects());
+      lists.palettes = parsePalettes(await controller.client.getPalettes());
     }
     if (presetsChanged) {
-      controller.presets = parsePresets(await controller.client.getPresets());
+      lists.presets = parsePresets(await controller.client.getPresets());
     }
+    Object.assign(controller, lists, { rawInfo, info });
+    this.issues.recover(`lists:${controller.mac}`, `Lists of ${controller.host} read again`);
     return catalogChanged || presetsChanged;
+  }
+
+  listsFailed(mac, host, err) {
+    this.issues.fail(`lists:${mac}`, `Cannot read the lists of ${host}: ${err.message}`);
   }
 
   // --- Devices ---------------------------------------------------------------
@@ -402,7 +428,7 @@ export class WledHub {
   }
 
   async publishDevices() {
-    await this.gladys.publishDiscoveredDevices(this.buildAllDevices());
+    await this.toGladys('publishDiscoveredDevices', this.buildAllDevices());
   }
 
   /**
@@ -488,7 +514,7 @@ export class WledHub {
         : { device_feature_external_id: id, state: value },
     );
     for (let at = 0; at < payload.length; at += MAX_STATES_PER_REQUEST) {
-      await this.gladys.publishStates(payload.slice(at, at + MAX_STATES_PER_REQUEST));
+      await this.toGladys('publishStates', payload.slice(at, at + MAX_STATES_PER_REQUEST));
     }
     for (const { id, value } of changed) {
       this.published.set(id, value);
@@ -504,7 +530,9 @@ export class WledHub {
       try {
         await this.publishStates(controller, options);
       } catch (err) {
-        logger.warn(`Cannot publish the states of ${controller.mac}: ${err.message}`);
+        if (!err.logged) {
+          logger.warn(`Cannot publish the states of ${controller.mac}: ${err.message}`);
+        }
       }
     }
   }
@@ -549,21 +577,40 @@ export class WledHub {
       }
     }
     for (let at = 0; at < entries.length; at += 100) {
-      await this.gladys.publishTransports(entries.slice(at, at + 100));
+      await this.toGladys('publishTransports', entries.slice(at, at + 100));
     }
   }
 
   async publishConnectionStatus() {
     const controllers = [...this.controllers.values()];
     if (controllers.length === 0) {
-      await this.gladys.setConnectionStatus(false, CONNECTION_TEXT.noController);
+      await this.toGladys('setConnectionStatus', false, CONNECTION_TEXT.noController);
       return;
     }
     if (!controllers.some((controller) => controller.reachable)) {
-      await this.gladys.setConnectionStatus(false, CONNECTION_TEXT.noAnswer);
+      await this.toGladys('setConnectionStatus', false, CONNECTION_TEXT.noAnswer);
       return;
     }
-    await this.gladys.setConnectionStatus(true);
+    await this.toGladys('setConnectionStatus', true);
+  }
+
+  /**
+   * A call to the Gladys host API. While Gladys restarts every call fails:
+   * one warning when it starts, one info line when Gladys accepts them again.
+   * The error is marked `logged` and thrown on.
+   */
+  async toGladys(method, ...args) {
+    try {
+      const result = await this.gladys[method](...args);
+      this.issues.recover('gladys', 'Gladys accepts the updates again');
+      return result;
+    } catch (err) {
+      this.issues.fail('gladys', `Gladys refused an update (${method}): ${err.message}`);
+      if (err && typeof err === 'object') {
+        err.logged = true;
+      }
+      throw err;
+    }
   }
 
   requestWidgetRefresh() {
@@ -639,15 +686,19 @@ export class WledHub {
 
   /** Read the state over HTTP (fallback poll, Gladys poll, scan). */
   async refresh(controller) {
+    let document;
     try {
-      const { state, info } = await controller.client.getStateInfo();
-      await this.applyDocument(controller, { state, info });
-      await this.reachabilityChanged(controller, true);
+      document = await controller.client.getStateInfo();
     } catch (err) {
       controller.lastError = err.message;
       logger.debug(`Refresh of ${controller.host} failed: ${err.message}`);
       await this.reachabilityChanged(controller, false);
+      return;
     }
+    // The controller answered: a failure from here on is Gladys' side (logged
+    // by toGladys), not a reason to flag the controller unreachable.
+    await this.reachabilityChanged(controller, true);
+    await this.applyDocument(controller, document);
   }
 
   async reachabilityChanged(controller, reachable) {
@@ -689,7 +740,7 @@ export class WledHub {
       try {
         listsChanged = await this.applyInfo(controller, info);
       } catch (err) {
-        logger.warn(`Cannot read the lists of ${controller.host}: ${err.message}`);
+        this.listsFailed(controller.mac, controller.host, err);
       }
     }
     if (state && typeof state === 'object') {
@@ -727,7 +778,7 @@ export class WledHub {
     }
     const preset = controller.presets.find(({ id }) => id === after);
     this.track(
-      this.gladys.publishSceneEvent(PRESET_TRIGGER, {
+      this.toGladys('publishSceneEvent', PRESET_TRIGGER, {
         device: deviceIds(this.gladys, controller).device,
         preset: preset?.name ?? `Preset ${after}`,
         preset_id: after,

@@ -1,8 +1,11 @@
 // -----------------------------------------------------------------------------
 // In-memory stand-in for the Gladys SDK client.
 //
-// The published SDK (0.14.0) does not ship `createFakeGladys` yet, so this
-// double reproduces the surface the integration uses, with the host API checks
+// Written before the SDK shipped its own (`createFakeGladys`, 0.15.0), and kept
+// for most tests: it adds the helpers they lean on (createDevice, call,
+// lastTransport) and the core's supported-options checks. test/live.test.js
+// runs the integration on the SDK's real client and fake instead. This double
+// reproduces the surface the integration uses, with the host API checks
 // that bite most often (external id prefix, known category/type/unit, poll
 // frequency, supported options, numeric or text states), using the feature
 // table taken from the core. It records what Gladys would receive and lets the
