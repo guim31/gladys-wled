@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-13
+
 ### Changed
 
 - Quieter logs: a controller found, lost or back, and each problem (Gladys
@@ -71,7 +73,8 @@ the notes of the version's GitHub Release.
 - "Search for controllers" action in the configuration screen.
 - User documentation in English and French.
 
-[Unreleased]: https://github.com/guim31/gladys-wled/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/guim31/gladys-wled/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/guim31/gladys-wled/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/guim31/gladys-wled/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/guim31/gladys-wled/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/guim31/gladys-wled/releases/tag/v1.0.1
