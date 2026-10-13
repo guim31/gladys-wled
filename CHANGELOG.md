@@ -10,6 +10,22 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Changed
+
+- Quieter logs: a controller found, lost or back, and each problem (Gladys
+  restarting, the mDNS scan refused, a list that cannot be read, a full
+  `/data`) once when it starts and once when it is over, instead of one line
+  per attempt. `LOG_LEVEL=debug` still shows every update and poll.
+- Gladys integration SDK 0.15.
+
+### Fixed
+
+- A controller whose state could not be sent to Gladys (Gladys restarting) was
+  flagged unreachable. It now stays reachable.
+- After a failed read of the effect, palette or preset lists, the lists were
+  only read again on the next firmware change or restart. They are now read
+  again with the next update from the controller.
+
 ## [1.1.0] - 2026-10-11
 
 ### Added

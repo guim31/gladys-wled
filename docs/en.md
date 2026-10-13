@@ -140,7 +140,9 @@ device) in its settings. It shows:
   changes made outside Gladys take up to 30 seconds to show. WLED also accepts
   a limited number of WebSocket clients at once: close the WLED app tabs you do
   not use.
-- The integration logs everything it does: open the integration logs from the
-  Gladys interface, with `LOG_LEVEL=debug` for the full detail.
+- The integration logs stay short: a controller found, lost or back, and each
+  problem once when it starts and once when it is over. Open them from the
+  Gladys interface; `LOG_LEVEL=debug` adds every update, poll and reconnection
+  attempt.
 
 This integration is not affiliated with the WLED project.

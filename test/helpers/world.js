@@ -29,6 +29,7 @@ export const allControllers = () =>
  * @param {boolean} [options.connect]
  * @param {string} [options.dataDir]
  * @param {object} [options.timings] hub timing overrides
+ * @param {boolean} [options.timers] run the hub's own timers (fallback poll, rescan)
  */
 export async function createWorld({
   controllers = allControllers(),
@@ -39,6 +40,7 @@ export async function createWorld({
   connect = true,
   dataDir = mkdtempSync(join(tmpdir(), 'gladys-wled-')),
   timings = {},
+  timers = false,
   now,
 } = {}) {
   const network = createFakeWled(controllers, { mdns });
@@ -51,7 +53,7 @@ export async function createWorld({
     store: new Store(dataDir),
     fetch: network.fetch,
     createSocket: network.createSocket,
-    timers: false,
+    timers,
     timings: { debounceMs: 0, ...timings },
     now,
   });
